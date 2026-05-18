@@ -7,7 +7,7 @@
 **Execution model:**
 - **Default (no flag):** execute mode. Chain phases. Only pause at destructive boundaries.
 - **`--advise-only`:** print the command for each phase and end the turn. The pre-v0.3 behavior. Use when you want to inspect what would happen.
-- **`--auto`:** even pause boundaries (commit, PR open) auto-execute. Use for trivial stories where you've already validated the diff and don't need a manual confirm. Cannot disable safety halts (CRITICAL findings, verify failure).
+- **`--auto`:** truly no human gates. Skips ECC `/plan` entirely (writes a minimal Plan placeholder so implement can proceed), skips the pre-commit Y/n confirm, and proceeds straight to PR open. Use for clone-of-sibling stories where you've internalized the pattern. Cannot disable safety halts (CRITICAL findings, verify failure, e2e failure, awaiting-merge).
 - **`--skip-plan`:** skip the plan phase (jump from missing-plan to implement). Useful for trivial / clone-of-sibling stories.
 - **`--no-e2e`:** skip e2e even if story tags would trigger it.
 - **`--hard-review`:** force adversarial + edge-case reviewers regardless of tags.
@@ -128,7 +128,28 @@
 
   <!-- ────────────────────── PLAN ────────────────────── -->
   <check if="phase == 'plan'">
-    <output>📐 plan → invoking `plan` skill on {{story_file}}…</output>
+    <!-- Under --auto or --skip-plan, we can't bypass ECC /plan's internal CONFIRM
+         gate, so we don't invoke it. We auto-write a minimal Plan section derived
+         from the story itself and let implement run directly. -->
+    <check if="--auto OR --skip-plan">
+      <output>📐 plan → auto-skipped ({{ "--auto" if --auto else "--skip-plan" }}). Writing minimal Plan placeholder so implement can proceed.</output>
+      <action>Append a `## Plan` section to {{story_file}} with:
+        ```
+        ## Plan
+
+        Auto-skipped (--auto). Implementation derived from:
+        - ACs in this story file
+        - Sibling pattern: {{sibling.id}} — {{sibling.title}}
+        - Refs listed above
+
+        prp-implement will read the ACs + Files block + sibling code and produce the diff.
+        ```
+      </action>
+      <action>Re-detect phase from Step 2 (should now be `implement`). Continue. Do NOT end turn.</action>
+    </check>
+
+    <!-- Default: invoke ECC's /plan, which has its own CONFIRM gate that the user must answer. -->
+    <output>📐 plan → invoking `plan` skill on {{story_file}}… (pass `--auto` to skip the CONFIRM gate)</output>
     <action>Invoke the `plan` skill via the Skill tool with argument `@{{story_file}}`. The plan skill will (a) read the story, (b) propose an implementation strategy, (c) ASK the user to CONFIRM before continuing. That confirmation gate is plan's own, not flow-story's — flow-story waits for it to return.</action>
     <action>After /plan returns successfully (story file now has a populated `## Plan` section): re-detect phase from Step 2 and continue. Do NOT end turn.</action>
   </check>
@@ -318,7 +339,7 @@
 | Phase | Trigger | Action in execute mode | Pauses on |
 |---|---|---|---|
 | auto-stub | sprint.yaml entry, no story file | scaffold 5–7 line stub from conventions | — |
-| plan | no `## Plan` populated | invoke `plan` skill (which has its own CONFIRM gate) | plan's own gate |
+| plan | no `## Plan` populated | invoke `plan` skill (CONFIRM gate) — or auto-write placeholder under `--auto`/`--skip-plan` | plan's CONFIRM (skipped under `--auto`) |
 | implement | branch + plan present, no commits | invoke `prp-implement` | — |
 | review | commits, no Review Notes | spawn reviewer(s) parallel; auto-append clean findings | CRITICAL/HIGH (always) |
 | verify | reviewed, no Verified marker | run verify adapter's cmd | non-zero exit (always) |
@@ -329,11 +350,14 @@
 | merge-done | PR merged | invoke `flow-sprint done` | — |
 
 **Hard halt boundaries** (never bypassed, even in `--auto`):
-- Plan skill's own CONFIRM gate
 - CRITICAL or HIGH review findings
 - Verify non-zero exit
 - E2E journey failure
 - PR open (awaits human merge — Flow does not auto-merge in v0)
+
+**Bypassed under `--auto`:**
+- Plan skill's CONFIRM gate (Flow writes a placeholder Plan instead of invoking `/plan`)
+- Pre-commit Y/n confirmation
 
 **Soft halt boundaries** (skipped in `--auto`):
 - Pre-commit confirmation prompt
