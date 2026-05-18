@@ -1,21 +1,31 @@
 # flow-story Workflow
 
-**Goal:** advance one story through the phases plan → (test) → implement → review → verify → (e2e) → (docs) → commit → pr. The skill detects which phase you're in from external state (sprint.yaml status, git branch, commits ahead, PR state) and either runs that phase or emits the next command to run.
+**Goal:** drive one story from its current phase to the next pause point. Default mode is **execute** — invoke the next command and chain phases automatically. Pause only at destructive boundaries (commit, PR) or blockers (CRITICAL review findings, verify failure, e2e failure).
 
-**Authority boundary:** this skill delegates. It does not write code, do reviews, or run tests. Those belong to ECC's primitives (`/plan`, `/prp-implement`, `/code-review`, `/update-docs`, `/prp-commit`, `/prp-pr`) and to the active adapters from `flow.config.yaml`. flow-story orchestrates them.
+**Authority boundary:** this skill orchestrates ECC and adapter primitives. The actual code-writing, reviewing, and verifying happens in those — flow-story calls them.
 
-**Idempotency:** re-invoking on the same phase without external state change produces identical output. No double commits, no double PRs.
+**Execution model:**
+- **Default (no flag):** execute mode. Chain phases. Only pause at destructive boundaries.
+- **`--advise-only`:** print the command for each phase and end the turn. The pre-v0.3 behavior. Use when you want to inspect what would happen.
+- **`--auto`:** even pause boundaries (commit, PR open) auto-execute. Use for trivial stories where you've already validated the diff and don't need a manual confirm. Cannot disable safety halts (CRITICAL findings, verify failure).
+- **`--skip-plan`:** skip the plan phase (jump from missing-plan to implement). Useful for trivial / clone-of-sibling stories.
+- **`--no-e2e`:** skip e2e even if story tags would trigger it.
+- **`--hard-review`:** force adversarial + edge-case reviewers regardless of tags.
+
+**Idempotency:** every phase checks "did I already do this?" via state markers in the story file. Re-invoking after a successful phase skips it. Workflow is safe to re-run without producing duplicate commits or PRs.
 
 ---
 
 <workflow>
 
-<step n="1" goal="Resolve target story">
+<step n="1" goal="Resolve target story + ensure story file exists">
+  <action>Parse flags from args: `--advise-only`, `--auto`, `--skip-plan`, `--no-e2e`, `--hard-review`, plus optional positional story id.</action>
+
   <action>Load `flow.config.yaml`. If missing, HALT with "Run /flow-init first."</action>
   <action>Load `docs/flow/sprint.yaml` → `{{sprint}}`.</action>
 
   <check if="positional arg provided">
-    <action>Match against story.id (E1-001 form) or against slug in story.file. → `{{story}}`.</action>
+    <action>Match against `story.id` (E1-001 or E1-S1 form). → `{{story}}`.</action>
     <check if="no match">
       <output>🚫 No story matching `{{arg}}`. Run `/flow-sprint status`.</output>
       <action>End turn.</action>
@@ -37,190 +47,252 @@
     </check>
   </check>
 
-  <action>Load `{{story_file}}` from `{{story.file}}`.</action>
-
   <check if="{{story.kind}} == 'offline'">
-    <output>🌍 **Offline story — flow-story doesn't drive this.**
-
-    {{story.id}} — {{story.title}}  (kind: offline)
-
-    Flow's per-story loop (plan → implement → review → verify → e2e → commit → PR) is for code work. Meatspace tasks like this one are tracked but executed off-keyboard.
-
-    When you've completed the work IRL, close it out:
-      `/flow-sprint done {{story.id}}` — closes cleanly without branch / PR / verify checks
-      `/flow-sprint done {{story.id}} --note "<one-line outcome>"` — also records the resolution
-
-    Or to abandon: `/flow-sprint done {{story.id}} --cancel`.
-    </output>
-    <action>End turn. Do not proceed to phase detection.</action>
+    <output>🌍 {{story.id}} — {{story.title}} is offline. Use `/flow-sprint done {{story.id}} --note "..."` when complete.</output>
+    <action>End turn.</action>
   </check>
+
+  <!-- Story file resolution + auto-scaffold ────────────────────────────── -->
+  <action>Determine `{{story_file}}`:
+    - If `{{story.file}}` set in sprint.yaml → that path.
+    - Else look for `docs/flow/stories/{{story.id}}-*.md` (glob).
+    - Else look for `docs/_bmad-output/implementation-artifacts/{{story.bmad_key}}.md` (legacy BMad spec).
+    - Else `{{story_file}}` is null → trigger auto-scaffold below.
+  </action>
+
+  <check if="{{story_file}} is null">
+    <action>**Auto-scaffold a minimal stub.** No interactive Q&A — derive everything from sprint.yaml + conventions.
+      1. Find the most recent done story in this epic → `{{sibling}}`. This sets the "house pattern" reference.
+      2. Look for design refs by convention: scan `docs/design/` for files whose name contains a slugified token of `{{story.title}}` (case-insensitive). Collect matches → `{{design_refs}}`.
+      3. Look for content refs: scan `docs/_bmad-output/planning-artifacts/` for `content-*` files mentioning the story's keyword. Collect → `{{content_refs}}`.
+      4. Generate the stub file at `docs/flow/stories/{{story.id}}-{{slug(story.title)}}.md` with this exact shape (5–10 lines, no boilerplate):
+
+      ```markdown
+      # {{story.id}} — {{story.title}}
+
+      **Epic:** {{story.epic}} — {{epic.title}}
+      **Tags:** {{story.tags or "(none)"}}
+      **Status:** {{story.status}}
+
+      **Refs:**
+      {{design_refs lines or "(no design ref auto-detected — check docs/design/)" }}
+      {{content_refs lines or "" }}
+      **Sibling pattern:** {{sibling.id}} — {{sibling.title}} ({{sibling.file or "see archive"}})
+
+      ## Plan
+
+      <!-- /plan will populate this. -->
+      ```
+
+      5. Append `file: docs/flow/stories/{{story.id}}-{{slug(story.title)}}.md` to the sprint.yaml entry for this story. Write sprint.yaml. Set `{{story_file}}` to the new path.
+    </action>
+    <output>📄 Auto-created stub: `{{story_file}}` (sibling: {{sibling.id}}, refs: {{design_refs_count}} design + {{content_refs_count}} content)</output>
+  </check>
+
+  <action>Load `{{story_file_content}}` from `{{story_file}}`.</action>
 </step>
 
-<step n="2" goal="Detect current phase from external state">
+<step n="2" goal="Detect current phase">
   <action>Read in parallel:
     - `{{branch}}` = `git rev-parse --abbrev-ref HEAD`
-    - `{{commits_ahead}}` = `git rev-list --count main..HEAD` (or main equivalent)
-    - `{{has_plan_section}}` = `grep -c '^## Plan' {{story_file}}`
-    - `{{has_impl_files}}` = check `## Files` block in story file vs actual git diff
-    - `{{review_done}}` = check `{{story_file}}` for `## Review Notes` section (added by /code-review hook or manual)
-    - `{{verify_passed}}` = check for `## Verified` marker
-    - `{{pr_number}}` = if pr_adapter != none, query GH for PR on this branch
-    - `{{pr_state}}` = open/merged/closed
+    - `{{commits_ahead}}` = `git rev-list --count origin/main..HEAD` (fall back to `main` if no `origin/main`)
+    - `{{has_plan_section}}` = does `{{story_file_content}}` contain `## Plan` followed by non-comment content
+    - `{{review_done}}` = does `{{story_file_content}}` contain `## Review Notes`
+    - `{{verify_passed}}` = does `{{story_file_content}}` contain `## Verified`
+    - `{{e2e_passed}}` = does `{{story_file_content}}` contain `## E2E` with `passed: true`
+    - `{{pr_number}}` + `{{pr_state}}` = if pr_adapter != none, query GH for PR on this branch
   </action>
 
-  <action>Phase decision tree:
-    - If `{{story.status}} == 'done'`: phase = `archived`, emit "Story already done. /flow-sprint status."
-    - Else if `{{story.status}} == 'review'` AND `{{pr_state}} == 'merged'`: phase = `merge-done`, run `flow-sprint done {{story.id}}`.
-    - Else if `{{story.status}} == 'review'`: phase = `awaiting-merge`, emit PR link + "Merge via GitHub UI, then re-run."
-    - Else if `{{commits_ahead}} > 0` AND `{{verify_passed}}` AND NOT `{{pr_number}}`: phase = `commit-pr`.
-    - Else if `{{commits_ahead}} > 0` AND `{{review_done}}` AND NOT `{{verify_passed}}`: phase = `verify`.
-    - Else if `{{commits_ahead}} > 0` AND NOT `{{review_done}}`: phase = `review`.
-    - Else if `{{branch}} starts with 'flow/'` AND NOT `{{commits_ahead}}` AND `{{has_plan_section}}` (or `--skip-plan`): phase = `implement`.
-    - Else if `{{branch}} starts with 'flow/'` AND NOT `{{has_plan_section}}` AND NOT `--skip-plan`: phase = `plan`.
-    - Else if `{{story.status}} == 'doing'` AND `{{branch}} == 'main'`: phase = `resume-branch`, emit "Run `git checkout flow/{{story.id}}-*` or `/flow-sprint next` to recreate branch."
-    - Else: phase = `unknown`, emit drift report.
+  <action>Phase decision (first match wins):
+    - `{{story.status}} == 'done'` → `archived`
+    - `{{story.status}} == 'review'` AND `{{pr_state}} == 'merged'` → `merge-done`
+    - `{{story.status}} == 'review'` → `awaiting-merge`
+    - `{{commits_ahead}} > 0` AND `{{verify_passed}}` AND e2e ok or n/a AND NOT `{{pr_number}}` → `commit-pr`
+    - `{{commits_ahead}} > 0` AND `{{review_done}}` AND NOT `{{verify_passed}}` → `verify`
+    - `{{commits_ahead}} > 0` AND NOT `{{review_done}}` → `review`
+    - `{{branch}}` starts `flow/` AND NOT `{{commits_ahead}}` AND (`{{has_plan_section}}` OR `--skip-plan`) → `implement`
+    - `{{branch}}` starts `flow/` AND NOT `{{has_plan_section}}` AND NOT `--skip-plan` → `plan`
+    - `{{story.status}} == 'doing'` AND `{{branch}} == 'main'` → `resume-branch`
+    - else → `unknown`
   </action>
 
-  <output>📋 Story {{story.id}} — phase: {{phase}}</output>
+  <output>📋 Story {{story.id}} — phase: {{phase}} {{ (advise-only) if --advise-only }}</output>
 </step>
 
-<step n="3" goal="Execute the detected phase">
+<step n="3" goal="Execute the detected phase + chain to next">
 
+  <!-- ADVISE-ONLY ESCAPE: emit command for current phase only, end turn -->
+  <check if="--advise-only">
+    <action>Print the command that WOULD execute for `{{phase}}`. Do not invoke. End turn.</action>
+  </check>
+
+  <!-- ────────────────────── PLAN ────────────────────── -->
   <check if="phase == 'plan'">
-    <output>📐 Phase: plan. The story has no `## Plan` section yet.
-
-    Run:  /plan @{{story_file}}
-
-    Or pass `--skip-plan` if this story is trivial enough to implement directly.
-
-    Re-invoke `/flow-story` after planning.
-    </output>
-    <action>End turn.</action>
+    <output>📐 plan → invoking `plan` skill on {{story_file}}…</output>
+    <action>Invoke the `plan` skill via the Skill tool with argument `@{{story_file}}`. The plan skill will (a) read the story, (b) propose an implementation strategy, (c) ASK the user to CONFIRM before continuing. That confirmation gate is plan's own, not flow-story's — flow-story waits for it to return.</action>
+    <action>After /plan returns successfully (story file now has a populated `## Plan` section): re-detect phase from Step 2 and continue. Do NOT end turn.</action>
   </check>
 
+  <!-- ────────────────────── IMPLEMENT ────────────────────── -->
   <check if="phase == 'implement'">
-    <output>🛠 Phase: implement.
-
-    Run:  /prp-implement @{{story_file}}
-
-    /prp-implement will read the story's ACs + Files + Plan and implement with validation loops. Or edit directly if you prefer.
-
-    Re-invoke `/flow-story` when commits are on the branch.
-    </output>
-    <action>End turn.</action>
+    <output>🛠 implement → invoking `prp-implement` skill on {{story_file}}…</output>
+    <action>Invoke the `prp-implement` skill via the Skill tool with argument `@{{story_file}}`. It reads the plan + ACs + Files block and implements with internal validation loops. May commit incrementally; flow-story tolerates that.</action>
+    <action>After /prp-implement returns: re-detect phase (should advance to `review` once commits are on the branch). Continue. Do NOT end turn.</action>
   </check>
 
+  <!-- ────────────────────── REVIEW ────────────────────── -->
   <check if="phase == 'review'">
-    <action>Compose reviewer list:
-      - Always: `/code-review`
-      - If `flow.config.yaml > review.language_reviewer` is set: that one
-      - Conditional on tags (auto_hard_review_tags ∩ story.tags ≠ ∅): `/security-review`, `bmad-review-edge-case-hunter`
-      - If `--hard-review`: force the conditional ones
+    <action>Compose reviewer set:
+      - Always: `code-review` (generic reviewer)
+      - Stack-specific: from `config.review.language_reviewer` if set (e.g. `typescript-reviewer`)
+      - Security: `security-review` if `(config.review.auto_hard_review_tags ∩ story.tags) ≠ ∅` OR `--hard-review`
+      - Adversarial: `bmad-review-edge-case-hunter` if `--hard-review` or tags include `auth|payments|migration|pii`
     </action>
 
-    <output>🔍 Phase: review.
+    <output>🔍 review → spawning {{reviewer_count}} reviewer(s) in parallel…</output>
 
-    Running:
-      {{reviewer_list with one per line}}
-
-    {{ if config.review.use_separate_model: }}
-    Multi-LLM mode: code-review spawns reviewer agent with model override.
-    </output>
-
-    <check if="config.review.use_separate_model AND we have Agent tool access">
-      <action>For each reviewer, spawn an Agent in parallel with appropriate subagent_type + model override. Collect findings.</action>
+    <check if="config.review.use_separate_model AND Agent tool available">
+      <action>Spawn each reviewer as an Agent (parallel, one Agent tool block with N tool calls). For language reviewers and security-review use `subagent_type: <reviewer-id>`. Use `model: "sonnet"` override if config says so. Collect all findings.</action>
     </check>
-    <check if="NOT spawning agents inline">
-      <action>Emit the exact commands the user should run, in order. End turn. (User runs them, re-invokes.)</action>
+    <check if="NOT use_separate_model">
+      <action>Invoke each reviewer skill sequentially via the Skill tool. Faster wall-clock to do them in parallel via Agent, but same model is fine for v0.</action>
     </check>
 
-    <action>If reviewers ran inline and findings include CRITICAL or HIGH: HALT with the report. User fixes, re-invokes.</action>
-    <action>If reviewers ran inline and findings are clean (or only LOW): append `## Review Notes` to story file with the LOW findings + reviewer names + timestamps. Continue to verify phase or end turn for user to re-invoke.</action>
-  </check>
+    <action>Aggregate findings by severity. Render the report.</action>
 
-  <check if="phase == 'verify'">
-    <action>Load verify adapter: `~/.claude/skills/flow-story/adapters/verify/{{config.adapters.verify}}.md`. Read its `verify_cmd`.</action>
+    <check if="any finding is CRITICAL or HIGH">
+      <output>🚨 Review halted — {{N}} CRITICAL, {{M}} HIGH finding(s):
 
-    <output>🧪 Phase: verify.
+      {{render findings with file:line}}
 
-    Running:  $ {{verify_cmd}}
-    </output>
-
-    <action>Execute verify_cmd via Bash. Stream output.</action>
-
-    <check if="exit != 0">
-      <output>✗ Verify failed. Fix issues and re-invoke.
-
-      Suggested:  /build-fix    (ECC has this skill — opt-in)
+      Fix these, then re-invoke `/flow-story`. (CRITICAL/HIGH always pauses, even in --auto mode.)
       </output>
       <action>End turn.</action>
     </check>
 
-    <action>Append `## Verified` block to story file with timestamp + command + exit_code.</action>
-
-    <check if="(story.tags ∩ config.implement.e2e_auto_trigger_tags) != ∅ AND config.adapters.e2e != 'none'">
-      <action>Continue to e2e phase.</action>
-    </check>
-    <check if="no e2e trigger">
-      <action>Continue to docs phase.</action>
-    </check>
+    <action>Append `## Review Notes` to {{story_file}} with LOW/MEDIUM findings, reviewer names, timestamps.</action>
+    <action>Re-detect phase. Continue. Do NOT end turn.</action>
   </check>
 
-  <check if="phase contains 'e2e'">
+  <!-- ────────────────────── VERIFY ────────────────────── -->
+  <check if="phase == 'verify'">
+    <action>Load verify adapter: `~/.claude/skills/flow-story/adapters/verify/{{config.adapters.verify}}.md`. Get its `verify_cmd`.</action>
+
+    <output>🧪 verify → $ {{verify_cmd}}</output>
+    <action>Execute `{{verify_cmd}}` via the Bash tool. Stream output. Capture exit code.</action>
+
+    <check if="exit != 0">
+      <output>✗ Verify failed (exit {{code}}). Fix and re-invoke. Common helpers:
+
+      `/build-fix` — ECC build-error resolver
+      Read the output above for the actual error.
+      </output>
+      <action>End turn. (Verify failure always pauses, even in --auto mode.)</action>
+    </check>
+
+    <action>Append `## Verified` block to {{story_file}} with timestamp + command + exit_code: 0.</action>
+    <action>Re-detect phase. Continue. Do NOT end turn.</action>
+  </check>
+
+  <!-- ────────────────────── E2E ────────────────────── -->
+  <check if="(story.tags ∩ config.implement.e2e_auto_trigger_tags) ≠ ∅ AND config.adapters.e2e != 'none' AND NOT {{e2e_passed}} AND NOT --no-e2e">
     <action>Load e2e adapter: `~/.claude/skills/flow-story/adapters/e2e/{{config.adapters.e2e}}.md`.</action>
-    <action>Read `## E2E Journey` block from story file. If missing, ask user "Story tagged for E2E but no Journey defined — describe in 3 lines:" and add to story file.</action>
-    <action>Execute the adapter's `run_journey` op. Stream output, save artifacts to `docs/flow/artifacts/{{story.id}}/`.</action>
-    <action>If failed: HALT. If passed: append `## E2E` block to story file with artifact paths.</action>
-  </check>
+    <action>Read `## E2E Journey` block from {{story_file}}. If missing, skip e2e and emit advisory "story tagged for E2E but has no Journey block — add one for stronger coverage". Do NOT halt.</action>
 
-  <check if="phase contains 'docs' (mode standard or team, or --docs flag)">
-    <output>📚 Phase: docs.
+    <output>🎭 e2e → running journey via {{config.adapters.e2e}}…</output>
+    <action>Execute the adapter's `run_journey` operation (typically the Playwright MCP tools per step). Stream output. Save artifacts to `docs/flow/artifacts/{{story.id}}/`.</action>
 
-    Running:
-      /update-docs
-      /update-codemaps
-    </output>
-    <action>Emit the commands; user runs them; re-invokes. Or if config.docs.auto and Agent tool available, spawn doc-updater agent inline.</action>
-  </check>
+    <check if="run_journey failed">
+      <output>✗ E2E journey failed. Artifacts: docs/flow/artifacts/{{story.id}}/
 
-  <check if="phase == 'commit-pr'">
-    <action>Compose commit message: `<type>: {{story.id}} — {{story.title}}` (type inferred from story.tags: ui→feat, fix→fix, etc.). Story file path included in scope.</action>
+      {{summary of failed steps}}
 
-    <output>💾 Phase: commit + PR.
-
-    Running:
-      /prp-commit "{{commit_msg}}"
-      /prp-pr
-    </output>
-
-    <action>Emit the commands. (Don't auto-commit/push in v0 — too risky. User runs /prp-commit and /prp-pr themselves.)</action>
-
-    <check if="pr_adapter != 'none' AND /prp-pr was just run AND PR opened">
-      <action>Flip `{{story.status}}` to `review`. Update sprint.yaml.</action>
-      <action>Invoke issue-tracker adapter `transition_to_review({{story.issue}}, {{pr_url}})`.</action>
-      <output>→ Sprint flipped: doing → review. Issue updated. Waiting on PR merge.</output>
+      Re-run after fixing. (E2E failure always pauses, even in --auto mode.)
+      </output>
+      <action>End turn.</action>
     </check>
 
-    <action>End turn.</action>
+    <action>Append `## E2E` block to {{story_file}} with `passed: true` + artifact paths.</action>
+    <action>Re-detect phase. Continue. Do NOT end turn.</action>
   </check>
 
+  <!-- ────────────────────── DOCS ────────────────────── -->
+  <check if="config.mode in [standard, team] AND {{verify_passed}} AND NOT story has '## Docs' marker">
+    <output>📚 docs → invoking `update-docs` skill…</output>
+    <action>Invoke `update-docs` skill via Skill tool. Wait for completion.</action>
+    <action>If `config.mode == team`, also invoke `update-codemaps`.</action>
+    <action>Append `## Docs` marker to {{story_file}}. Re-detect. Continue. Do NOT end turn.</action>
+  </check>
+
+  <!-- ────────────────────── COMMIT-PR ────────────────────── -->
+  <check if="phase == 'commit-pr'">
+    <action>Compose commit message: derive `type` from story.tags (ui→feat, fix→fix, chore→chore, default feat) and form `<type>: {{story.id}} — {{story.title}}`.</action>
+
+    <output>💾 commit-pr → ready to commit + open PR.
+
+    Commit message: `{{commit_msg}}`
+    Branch:         {{branch}}
+    PR target:      main
+    </output>
+
+    <check if="NOT --auto">
+      <ask>Proceed? [Y/n/edit-message]</ask>
+      <check if="user picks edit-message">
+        <ask>New commit message:</ask>
+        <action>Update `{{commit_msg}}`.</action>
+      </check>
+      <check if="user picks n">
+        <output>Holding. Run `/flow-story` again when ready.</output>
+        <action>End turn.</action>
+      </check>
+    </check>
+
+    <action>Invoke `prp-commit` skill via Skill tool with the commit message + the relevant file paths.</action>
+    <action>Invoke `prp-pr` skill via Skill tool. The PR body is rendered from `templates/pr.md.tmpl` + story content.</action>
+
+    <action>After prp-pr returns with the PR URL:
+      1. Flip `{{story.status}}` in sprint.yaml: doing → review. Set `pr: {{pr_url}}`.
+      2. Invoke issue-tracker adapter `transition_to_review({{story.issue}}, {{pr_url}})` if `{{story.issue}}` set.
+      3. Write sprint.yaml.
+    </action>
+
+    <output>✓ PR opened: {{pr_url}}. Sprint: doing → review.
+
+    Next: review the PR, merge it, then run `/flow-sprint done {{story.id}}` (or re-invoke `/flow-story` for auto-close on merge).
+    </output>
+    <action>End turn. (PR is open; waiting on human review unless --auto-merge is implemented in a future version.)</action>
+  </check>
+
+  <!-- ────────────────────── AWAITING MERGE ────────────────────── -->
   <check if="phase == 'awaiting-merge'">
-    <output>⏳ Phase: awaiting merge.
+    <output>⏳ awaiting-merge — PR {{pr_url}} ({{pr_state}}, reviewDecision: {{reviewDecision}})
 
-    PR: {{pr_url}} ({{pr_state}})
-
-    Merge it (via GitHub UI or `gh pr merge {{pr_number}} --squash`), then re-invoke `/flow-story` or run `/flow-sprint done {{story.id}}` directly.
+    Merge via GitHub UI or `gh pr merge {{pr_number}} --squash --delete-branch`. Then re-invoke `/flow-story` (auto-closes) or `/flow-sprint done {{story.id}}` directly.
     </output>
     <action>End turn.</action>
   </check>
 
+  <!-- ────────────────────── MERGE-DONE ────────────────────── -->
   <check if="phase == 'merge-done'">
-    <output>✓ PR merged. Closing out…</output>
-    <action>Delegate to flow-sprint: `/flow-sprint done {{story.id}}`.</action>
+    <output>✓ PR merged. Closing out via /flow-sprint done…</output>
+    <action>Invoke `flow-sprint` skill with arg `done {{story.id}}`. That handles branch cleanup, status flip to done, archive, issue close.</action>
+    <action>End turn.</action>
   </check>
 
+  <!-- ────────────────────── RESUME BRANCH ────────────────────── -->
+  <check if="phase == 'resume-branch'">
+    <output>⚠ Story {{story.id}} is `doing` but you're on `main`. Expected branch: `flow/{{story.id}}-*`.
+
+    Options:
+      - `git checkout flow/{{story.id}}-...` if the branch still exists locally
+      - `/flow-sprint next` to recreate
+    </output>
+    <action>End turn.</action>
+  </check>
+
+  <!-- ────────────────────── UNKNOWN ────────────────────── -->
   <check if="phase == 'unknown'">
-    <output>🚨 Unable to detect phase — state is inconsistent.
+    <output>🚨 Drift detected. State is inconsistent:
 
     Branch:     {{branch}}
     Commits:    {{commits_ahead}}
@@ -230,10 +302,7 @@
     PR:         {{pr_number}} ({{pr_state}})
     Story:      {{story.status}}
 
-    Suggested:
-      - `/flow-sprint status` to inspect sprint state
-      - `git status` to inspect branch state
-      - `/flow-story --dry-run` to see detected phase without executing
+    Inspect with: `/flow-sprint status` + `git status`. Re-invoke with `--advise-only` to see what each phase would do without acting.
     </output>
     <action>End turn.</action>
   </check>
@@ -244,16 +313,29 @@
 
 ---
 
-## Phase summary table
+## Phase summary
 
-| Phase | Trigger condition | Delegates to | Own work |
+| Phase | Trigger | Action in execute mode | Pauses on |
 |---|---|---|---|
-| plan | branch=flow/* AND no `## Plan` | `/plan @story` | — |
-| implement | branch=flow/* AND has Plan AND no commits | `/prp-implement @story` | — |
-| review | commits>0 AND no Review Notes | `/code-review` (+ language reviewer + conditional security/hard) | append Review Notes |
-| verify | reviewed AND no Verified marker | verify adapter | append Verified marker |
-| e2e | tags trigger AND e2e adapter active | e2e adapter | save artifacts |
-| docs | mode≥standard OR --docs | `/update-docs` + `/update-codemaps` | — |
-| commit-pr | verified AND no PR | `/prp-commit` + `/prp-pr` | flip status → review, transition issue |
-| awaiting-merge | PR open | — | print PR link + wait |
-| merge-done | PR merged | `/flow-sprint done` | archive story, close issue |
+| auto-stub | sprint.yaml entry, no story file | scaffold 5–7 line stub from conventions | — |
+| plan | no `## Plan` populated | invoke `plan` skill (which has its own CONFIRM gate) | plan's own gate |
+| implement | branch + plan present, no commits | invoke `prp-implement` | — |
+| review | commits, no Review Notes | spawn reviewer(s) parallel; auto-append clean findings | CRITICAL/HIGH (always) |
+| verify | reviewed, no Verified marker | run verify adapter's cmd | non-zero exit (always) |
+| e2e | story tags trigger, e2e adapter active | run journey via adapter | journey failure (always) |
+| docs | mode ≥ standard, verified, no Docs marker | invoke `update-docs` (and `update-codemaps` in team) | — |
+| commit-pr | verified, no PR | propose commit; ask Y/n; invoke `prp-commit` + `prp-pr` | user n (skipped if --auto) |
+| awaiting-merge | PR open | print PR link + wait | always (need human merge) |
+| merge-done | PR merged | invoke `flow-sprint done` | — |
+
+**Hard halt boundaries** (never bypassed, even in `--auto`):
+- Plan skill's own CONFIRM gate
+- CRITICAL or HIGH review findings
+- Verify non-zero exit
+- E2E journey failure
+- PR open (awaits human merge — Flow does not auto-merge in v0)
+
+**Soft halt boundaries** (skipped in `--auto`):
+- Pre-commit confirmation prompt
+
+**Never silent:** every phase prints what it's doing (`📐 plan → ...`, `🛠 implement → ...`, etc.) so the user can see chaining happen and Ctrl-C if needed.
