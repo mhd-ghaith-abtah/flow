@@ -9,7 +9,10 @@
 - **`--advise-only`:** print the command for each phase and end the turn. The pre-v0.3 behavior. Use when you want to inspect what would happen.
 - **`--auto`:** truly no human gates. Skips ECC `/plan` entirely (writes a minimal Plan placeholder so implement can proceed), skips the pre-commit Y/n confirm, and proceeds straight to PR open. Use for clone-of-sibling stories where you've internalized the pattern. Cannot disable safety halts (CRITICAL findings, verify failure, e2e failure, awaiting-merge).
 - **`--skip-plan`:** skip the plan phase (jump from missing-plan to implement). Useful for trivial / clone-of-sibling stories.
+- **`--no-verify`:** skip the verify phase (don't run `make verify` / `pnpm verify`). Risky — disables a safety gate. Use for docs-only / content-only changes.
 - **`--no-e2e`:** skip e2e even if story tags would trigger it.
+- **`--no-tests`:** shortcut for `--no-verify` + `--no-e2e`. Skips all test gates. Use only when you're iterating on something you'll re-check later.
+- **`--no-review`:** skip the code-review phase. Even riskier than `--no-verify`. Use for trivial dependency bumps / config tweaks.
 - **`--hard-review`:** force adversarial + edge-case reviewers regardless of tags.
 
 **Idempotency:** every phase checks "did I already do this?" via state markers in the story file. Re-invoking after a successful phase skips it. Workflow is safe to re-run without producing duplicate commits or PRs.
@@ -19,7 +22,8 @@
 <workflow>
 
 <step n="1" goal="Resolve target story + ensure story file exists">
-  <action>Parse flags from args: `--advise-only`, `--auto`, `--skip-plan`, `--no-e2e`, `--hard-review`, plus optional positional story id.</action>
+  <action>Parse flags from args: `--advise-only`, `--auto`, `--skip-plan`, `--no-verify`, `--no-e2e`, `--no-tests`, `--no-review`, `--hard-review`, plus optional positional story id.</action>
+  <action>If `--no-tests` is set, treat both `--no-verify` and `--no-e2e` as also set.</action>
 
   <action>Load `flow.config.yaml`. If missing, HALT with "Run /flow-init first."</action>
   <action>Load `docs/flow/sprint.yaml` → `{{sprint}}`.</action>
@@ -163,6 +167,11 @@
 
   <!-- ────────────────────── REVIEW ────────────────────── -->
   <check if="phase == 'review'">
+    <check if="--no-review">
+      <output>🔍 review → skipped (--no-review). Appending placeholder Review Notes…</output>
+      <action>Append `## Review Notes` to {{story_file}} with `(skipped via --no-review, {{timestamp}})`. Re-detect phase. Continue.</action>
+    </check>
+
     <action>Compose reviewer set:
       - Always: `code-review` (generic reviewer)
       - Stack-specific: from `config.review.language_reviewer` if set (e.g. `typescript-reviewer`)
@@ -197,6 +206,11 @@
 
   <!-- ────────────────────── VERIFY ────────────────────── -->
   <check if="phase == 'verify'">
+    <check if="--no-verify">
+      <output>🧪 verify → skipped (--no-verify / --no-tests). Appending placeholder Verified marker…</output>
+      <action>Append `## Verified` to {{story_file}} with `(skipped via --no-verify, {{timestamp}})`. Re-detect phase. Continue.</action>
+    </check>
+
     <action>Load verify adapter: `~/.claude/skills/flow-story/adapters/verify/{{config.adapters.verify}}.md`. Get its `verify_cmd`.</action>
 
     <output>🧪 verify → $ {{verify_cmd}}</output>
@@ -341,9 +355,9 @@
 | auto-stub | sprint.yaml entry, no story file | scaffold 5–7 line stub from conventions | — |
 | plan | no `## Plan` populated | invoke `plan` skill (CONFIRM gate) — or auto-write placeholder under `--auto`/`--skip-plan` | plan's CONFIRM (skipped under `--auto`) |
 | implement | branch + plan present, no commits | invoke `prp-implement` | — |
-| review | commits, no Review Notes | spawn reviewer(s) parallel; auto-append clean findings | CRITICAL/HIGH (always) |
-| verify | reviewed, no Verified marker | run verify adapter's cmd | non-zero exit (always) |
-| e2e | story tags trigger, e2e adapter active | run journey via adapter | journey failure (always) |
+| review | commits, no Review Notes | spawn reviewer(s) parallel; auto-append clean findings | CRITICAL/HIGH (always); skipped under `--no-review` |
+| verify | reviewed, no Verified marker | run verify adapter's cmd | non-zero exit (always); skipped under `--no-verify` / `--no-tests` |
+| e2e | story tags trigger, e2e adapter active | run journey via adapter | journey failure (always); skipped under `--no-e2e` / `--no-tests` |
 | docs | mode ≥ standard, verified, no Docs marker | invoke `update-docs` (and `update-codemaps` in team) | — |
 | commit-pr | verified, no PR | propose commit; ask Y/n; invoke `prp-commit` + `prp-pr` | user n (skipped if --auto) |
 | awaiting-merge | PR open | print PR link + wait | always (need human merge) |

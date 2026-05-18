@@ -1,8 +1,8 @@
 ---
 name: flow-story
 description: 'Per-story orchestrator. Auto-detects phase (plan / implement / review / verify / e2e / docs / commit / pr / merge-done) from sprint.yaml + git branch + commits + PR state, then invokes the right ECC primitive (/plan, /prp-implement, /code-review, /update-docs, /prp-commit, /prp-pr) or active adapter, and chains to the next phase. Auto-scaffolds a minimal story-file stub from sprint.yaml + conventions when missing. Accepts no args (continues active story) or a story id. Use when the user runs /flow-story or /flow-story <id>.'
-argument-hint: '[<story-id>] [--advise-only] [--auto] [--skip-plan] [--no-e2e] [--hard-review]'
-version: 0.3.0
+argument-hint: '[<story-id>] [--advise-only] [--auto] [--skip-plan] [--no-verify] [--no-e2e] [--no-tests] [--no-review] [--hard-review]'
+version: 0.3.1
 ---
 
 Follow the instructions in ./workflow.md.
