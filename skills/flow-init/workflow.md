@@ -155,11 +155,17 @@
 </step>
 
 <step n="6" goal="Execute — Flow's own files">
-  <action>For each operation in `{{plan.flow_components}}`:
-    - copy-file / ensure-dir / touch as specified in the operation
-    - Record each operation in `{{home_state}}.operations` with sourcePath, destinationPath, moduleId, ownership: managed
+  <action>For each operation in `{{plan.flow_components}}` AND `{{plan.adapters}}.ops`:
+    - **Dev-mount detection (do this FIRST for every copy op):**
+      1. Check whether `destinationPath` already exists as a symbolic link (`test -L "$destinationPath"`).
+      2. If yes, resolve it: `readlink "$destinationPath"` → `{{resolved}}`.
+      3. If `{{resolved}}` equals `sourcePath` (or matches `{{repo_root}}/...` for the source's relative form), this is a **dev-mount** placed by `tools/dev-link.sh`. SKIP the copy and record the op as `{ kind: "skip-dev-mount", destinationPath, resolves_to: resolved }` in state.
+      4. If `{{resolved}}` is anywhere else, HALT with: "Unexpected symlink at {{destinationPath}} → {{resolved}}. Refusing to overwrite. Resolve manually or pass `--force-overwrite-symlinks`."
+    - **Otherwise** (target is not a symlink, or doesn't exist):
+      - copy-file / ensure-dir / touch as specified in the operation.
+      - Record each operation in `{{home_state}}.operations` with sourcePath, destinationPath, moduleId, ownership: managed.
   </action>
-  <output>✓ Installed {{N}} Flow files</output>
+  <output>✓ Installed {{N}} Flow files ({{skipped_count}} skipped — dev-mount detected, content already live)</output>
 </step>
 
 <step n="7" goal="Execute — delegate to BMad if requested">
@@ -230,9 +236,11 @@
 
     <action>Read `docs/_bmad-output/implementation-artifacts/deferred-work.md`. For each non-folded entry, append a one-line summary to `docs/flow/deferred.md`.</action>
 
-    <action>Rename `_bmad/` → `_bmad.archived/` (preserve, don't delete). Keep `docs/_bmad-output/planning-artifacts/` in place as reference docs.</action>
+    <action>**Do NOT rename or remove `_bmad/`.** Leave it in place so BMad slash commands keep working in this project (the global `bmad-*` skills resolve `_bmad/scripts/...` paths relative to project root). Flow ignores it. The user can archive manually later via `mv _bmad _bmad.archived` once they're sure they're done with BMad in this project, or run `flow uninstall --archive-bmad` in v0.2+.</action>
 
-    <action>Record migration in `{{project_state}}.migrations.bmad`: { from_version, stories_imported, deferred_imported, archived_at }</action>
+    <action>Keep `docs/_bmad-output/planning-artifacts/` in place as reference docs (Flow's `flow.config.yaml > reference_docs` points at it).</action>
+
+    <action>Record migration in `{{project_state}}.migrations.bmad`: { from_version, stories_imported, deferred_imported, bmad_kept_in_place: true }</action>
   </check>
 </step>
 
