@@ -4,7 +4,7 @@
 
 **Authority:** the catalog at `catalog.yaml` is the single source of truth for available components, profiles, adapters, MCPs, and upstream presets. This workflow reads it; it does not duplicate its contents.
 
-**Idempotency:** re-running `/flow init` on a project that's already configured re-reads `install-state.json`, presents the current state, and offers `--update` or `--repair` rather than reinstalling blindly.
+**Idempotency:** re-running `/flow-init` on a project that's already configured re-reads `install-state.json`, presents the current state, and offers `--update` or `--repair` rather than reinstalling blindly.
 
 ---
 
@@ -15,7 +15,7 @@
     - If env `FLOW_REPO_ROOT` is set, use it.
     - Else if running from `~/.claude/skills/flow-init/`, walk up to find a directory containing `catalog.yaml` (npm install path is typically `~/.npm-global/lib/node_modules/@mhd-ghaith-abtah/flow/`).
     - Else if the CWD contains `catalog.yaml`, use the CWD (dev mode).
-    - Else HALT with "catalog.yaml not found — re-install Flow via `npx @mhd-ghaith-abtah/flow init`".
+    - Else HALT with "catalog.yaml not found — re-install Flow via `npx @mhd-ghaith-abtah/flow-init`".
   </action>
 
   <action>Load `{{catalog}}` from `{{repo_root}}/catalog.yaml`. Validate against `{{repo_root}}/schemas/catalog.schema.json` if present.</action>

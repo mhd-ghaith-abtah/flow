@@ -59,7 +59,7 @@ Map:
 
 ## Failure handling
 
-- If MCP unavailable, halt with: "Linear MCP not reachable — run `claude mcp list` to debug, or `/flow init --repair`."
+- If MCP unavailable, halt with: "Linear MCP not reachable — run `claude mcp list` to debug, or `/flow-init --repair`."
 - If auth not completed, halt with: "Linear OAuth not done — open Claude Code Settings → MCP → linear → Authenticate."
 - Rate limit: Linear MCP returns 429 — retry with exponential backoff up to 3 times.
 - If team_key not found, halt with the list of available team keys.

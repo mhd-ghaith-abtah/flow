@@ -80,7 +80,7 @@ Optional — v0.1 returns `{ diff_pct: null, note: "not implemented" }`. v0.2 wi
 
 ## Failure handling
 
-- MCP unreachable: halt with `claude mcp list` output and "Run `/flow init --repair` or `claude mcp add playwright ...`".
+- MCP unreachable: halt with `claude mcp list` output and "Run `/flow-init --repair` or `claude mcp add playwright ...`".
 - Server start fails: halt with the start command output.
 - Journey block missing: prompt user to add it, or fall back to `smoke_test`.
 - Step verb unrecognized: halt with the offending line and the supported verbs list above.

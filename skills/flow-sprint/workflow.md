@@ -28,7 +28,7 @@
     - `{{mode}}` = config.mode
   </action>
 
-  <action>If `flow.config.yaml` is missing, HALT with "Flow not installed in this project — run /flow init first."</action>
+  <action>If `flow.config.yaml` is missing, HALT with "Flow not installed in this project — run /flow-init first."</action>
 
   <action>Load `{{sprint}}` = parsed `{{sprint_file}}`.</action>
 </step>

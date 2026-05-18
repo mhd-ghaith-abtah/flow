@@ -268,7 +268,7 @@ upstreams:
         profile: null
 
 # ─────────────────────────────────────────────────────────────────────────────
-# PROFILES — named bundles users pick during /flow init
+# PROFILES — named bundles users pick during /flow-init
 # ─────────────────────────────────────────────────────────────────────────────
 profiles:
 

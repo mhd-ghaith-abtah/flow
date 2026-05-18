@@ -11,7 +11,7 @@
 <workflow>
 
 <step n="1" goal="Resolve target story">
-  <action>Load `flow.config.yaml`. If missing, HALT with "Run /flow init first."</action>
+  <action>Load `flow.config.yaml`. If missing, HALT with "Run /flow-init first."</action>
   <action>Load `docs/flow/sprint.yaml` → `{{sprint}}`.</action>
 
   <check if="positional arg provided">

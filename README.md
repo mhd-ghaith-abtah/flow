@@ -17,10 +17,10 @@ Existing per-story workflows are token-heavy. BMad's create-story re-reads epics
 
 ```bash
 # Recommended — works in any terminal
-npx @mhd-ghaith-abtah/flow init
+npx @mhd-ghaith-abtah/flow-init
 
 # Inside Claude Code
-/flow init
+/flow-init
 ```
 
 Either route runs the same interactive installer. It detects your project shape, asks ~8 questions, then:
@@ -34,7 +34,7 @@ Either route runs the same interactive installer. It detects your project shape,
 ## Quickstart
 
 ```bash
-$ /flow init                                              # one time per project
+$ /flow-init                                              # one time per project
 $ /flow-sprint add "First story" --epic E1 --tags ui      # add a story
 $ /flow-sprint next                                       # start work
 $ /flow-story                                             # implement → review → verify → commit → PR

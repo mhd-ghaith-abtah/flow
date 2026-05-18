@@ -22,7 +22,7 @@ ${chalk.bold('Usage:')}
   flow <command> [options]
 
 ${chalk.bold('Commands:')}
-  init                          Interactive first-time setup (same as /flow init in Claude Code)
+  init                          Interactive first-time setup (same as /flow-init in Claude Code)
   install                       Non-interactive install with flags
   plan                          Dry-run: show the resolved install plan
   status                        What's installed where
@@ -58,9 +58,10 @@ ${chalk.bold('Examples:')}
   flow doctor
   flow uninstall --scope project
 
-${chalk.bold('Inside Claude Code:')}
-  /flow init             /flow-sprint next         /flow-story
-  /flow-sprint status    /flow-sprint done <id>    /flow doctor
+${chalk.bold('Inside Claude Code (slash commands — hyphenated):')}
+  /flow-init                                  first-time setup (interactive)
+  /flow-sprint <subcommand> [args]            add | next | status | done | retro | ...
+  /flow-story [story-id]                      advance the active story
 
 Version ${PKG.version} · ${chalk.dim(PKG.homepage)}
 `;
