@@ -38,6 +38,22 @@
   </check>
 
   <action>Load `{{story_file}}` from `{{story.file}}`.</action>
+
+  <check if="{{story.kind}} == 'offline'">
+    <output>🌍 **Offline story — flow-story doesn't drive this.**
+
+    {{story.id}} — {{story.title}}  (kind: offline)
+
+    Flow's per-story loop (plan → implement → review → verify → e2e → commit → PR) is for code work. Meatspace tasks like this one are tracked but executed off-keyboard.
+
+    When you've completed the work IRL, close it out:
+      `/flow-sprint done {{story.id}}` — closes cleanly without branch / PR / verify checks
+      `/flow-sprint done {{story.id}} --note "<one-line outcome>"` — also records the resolution
+
+    Or to abandon: `/flow-sprint done {{story.id}} --cancel`.
+    </output>
+    <action>End turn. Do not proceed to phase detection.</action>
+  </check>
 </step>
 
 <step n="2" goal="Detect current phase from external state">

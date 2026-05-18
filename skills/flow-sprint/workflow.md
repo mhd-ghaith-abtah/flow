@@ -8,6 +8,9 @@
   - BMad-style — `E1-S1`, `E2-S10`, `E3-S9b`, … (kept when migrated from `bmad-create-story` output to preserve continuity)
   - Both forms can coexist in the same sprint.yaml. `flow-sprint add` continues whichever form the epic already uses.
 - `stories[].status` in `[backlog, doing, review, done, cancelled]`
+- `stories[].kind` in `[code, offline]`, default `code` when omitted.
+  - `code` — runs the full per-story loop (branch → plan → implement → review → verify → e2e → docs → commit → PR).
+  - `offline` — meatspace tasks (address resolution, photoshoot, copywriting, manual data work). `next` skips by default; `done` is a one-shot flip with no branch / PR / verify checks.
 - Exactly zero or one story may be in `doing` at any time (enforce one-story-at-a-time per dev unless `mode: team`)
 
 ---
@@ -107,11 +110,29 @@
   </check>
 
   <check if="subcommand == 'next'">
-    <action>Find the first story in `{{sprint}}.stories` where status == 'backlog' (preserve YAML order). → `{{story}}`.</action>
-    <check if="no such story">
-      <output>📭 No backlog stories. Run `/flow-sprint status` to see what's left, or `/flow-sprint add` to create one.</output>
+    <action>Parse optional flags from args: `--epic <id>` (scope picker to one epic), `--include-offline` (don't skip stories where `kind == offline`), `--kind <code|offline>` (force pick by kind).</action>
+
+    <action>Build the candidate set:
+      1. Start from `{{sprint}}.stories` where `status == 'backlog'` (preserve YAML order).
+      2. If `--epic` given, filter to that epic.
+      3. **Filter out offline stories by default:** drop entries where `kind == 'offline'` UNLESS `--include-offline` or `--kind offline` was passed.
+      4. → `{{candidates}}`.
+    </action>
+
+    <check if="{{candidates}} is empty">
+      <action>Check whether there ARE offline stories that were filtered out. If yes, surface them as a hint.</action>
+      <output>📭 No code stories in backlog{{epic_scope_suffix}}.
+
+      {{ if filtered_offline > 0: }}{{filtered_offline}} offline-tagged story(ies) skipped. Run with `--include-offline` to pick one, or:
+        - `/flow-sprint next --include-offline` — include offline stories in the candidate pool
+        - `/flow-sprint done <id> --kind offline` — close an offline story directly (no branch, no PR)
+        - `/flow-sprint add "<title>" --epic E? --tags ...` — add a new story
+      {{ else: }}Add a story with `/flow-sprint add` or run `/flow-sprint status` to see what's left.{{ /if }}
+      </output>
       <action>End turn.</action>
     </check>
+
+    <action>Pick the first entry in `{{candidates}}` → `{{story}}`.</action>
 
     <check if="any story has status == 'doing'">
       <output>⚠ Another story is already in 'doing': {{that_story.id}}. Finish or pause it first.</output>
@@ -120,7 +141,18 @@
 
     <action>Flip `{{story}}.status` to `doing`. Set `{{story}}.started_at` = today (ISO).</action>
 
-    <action>Create + checkout branch: `git checkout -b flow/{{story.id}}-{{slug(title)}}` (or `{{issue_id}}-...` if present and adapter prefers that format).</action>
+    <check if="{{story.kind}} == 'offline'">
+      <action>**Offline branch:** do NOT create a git branch. Skip the issue-tracker `transition_to_doing` call (offline stories typically have no linked issue). Write sprint.yaml. Emit:</action>
+      <output>📌 Started {{story.id}} — {{story.title}}   *(kind: offline)*
+
+         No branch created — this is meatspace work.
+         When you've completed the task IRL, close it out:
+           `/flow-sprint done {{story.id}}`
+      </output>
+      <action>End turn — flow-story has nothing to do for offline stories.</action>
+    </check>
+
+    <action>**Code branch (default):** Create + checkout `git checkout -b flow/{{story.id}}-{{slug(title)}}` (or `{{issue_id}}-...` if present and adapter prefers that format).</action>
 
     <action>Invoke issue-tracker adapter `transition_to_doing({{story.issue}})` if `{{issue_id}}` exists.</action>
 
@@ -158,7 +190,25 @@
   </check>
 
   <check if="subcommand == 'done'">
-    <action>Parse: `<story-id>`. Look up story in {{sprint}}.</action>
+    <action>Parse: `<story-id>` [+ optional flags `--note "..."`, `--force`]. Look up story in {{sprint}}.</action>
+
+    <check if="{{story.kind}} == 'offline'">
+      <action>**Offline shortcut path** — no branch / PR / verify gates apply.
+        1. Validate current status in `[backlog, doing]` (allow done-without-doing for backfilled offline work; halt only if already `done` or `cancelled`).
+        2. Flip `{{story}}.status` → `done`. Set `{{story}}.completed_at` = today.
+        3. If `--note` provided, append it to `{{story}}.notes` (one-line resolution summary, e.g. `"Office at Dubai Silicon Oasis, Building XYZ, Floor 3"`).
+        4. Invoke issue-tracker adapter `transition_to_done({{story.issue}})` only if `{{story.issue}}` exists (typically offline stories have none).
+        5. If story file exists, move to archive; else skip.
+        6. Write sprint.yaml.
+        7. Skip the `git checkout main && pull && branch -d` block — no branch was created.
+      </action>
+      <output>✓ {{story.id}} done   *(offline)*
+         {{ if note: }}Note: {{note}}{{ /if }}
+      </output>
+      <action>Continue to epic-complete check at bottom of this subcommand, then end turn.</action>
+    </check>
+
+    <action>**Code path (default):**</action>
     <action>Validate current status is `review` (or `doing` if user passes `--force`).</action>
 
     <check if="story has issue AND {{pr_adapter}} != 'none'">
