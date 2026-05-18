@@ -1,0 +1,321 @@
+# Flow catalog — the single source of truth for what can be installed.
+# Validated against schemas/catalog.schema.json on every install + in CI.
+#
+# Structure:
+#   flow_components: Flow's own files (skills, adapters, templates)
+#   adapters:        Per-category adapter list (issue-tracker, pr, e2e, verify, notification)
+#   mcps:            MCP server definitions used by adapters
+#   upstreams:       BMad + ECC delegation config (Flow does not own these — calls upstream installers)
+#   profiles:        Named bundles users pick from (mini, standard, team, full)
+
+version: 1
+flow_version_compat: ">=0.0.1 <0.2.0"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# FLOW COMPONENTS — Flow's own files installed via copy-file operations
+# ─────────────────────────────────────────────────────────────────────────────
+flow_components:
+
+  - id: core:flow-skills
+    family: core
+    description: "The three Flow skills (flow-init, flow-sprint, flow-story)"
+    required: true
+    operations:
+      - copy: { from: "skills/flow-init",   to: "$HOME/.claude/skills/flow-init"   }
+      - copy: { from: "skills/flow-sprint", to: "$HOME/.claude/skills/flow-sprint" }
+      - copy: { from: "skills/flow-story",  to: "$HOME/.claude/skills/flow-story"  }
+
+  - id: core:flow-templates
+    family: core
+    description: "Project-level templates: story.md, sprint.yaml, retro.md, flow.config.yaml, pr.md"
+    required: true
+    operations:
+      - copy: { from: "templates", to: "$HOME/.claude/skills/flow-init/templates" }
+
+  - id: core:flow-state-store
+    family: core
+    description: "Install-state machinery — initializes $HOME/.claude/flow/install-state.json"
+    required: true
+    operations:
+      - ensure_dir: "$HOME/.claude/flow"
+      - touch:      "$HOME/.claude/flow/install-state.json"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ADAPTERS — pluggable integrations selected per project in flow.config.yaml
+# ─────────────────────────────────────────────────────────────────────────────
+adapters:
+
+  # Issue tracker ────────────────────────────────────────────────────────────
+  - id: adapter:issue-tracker-linear
+    family: issue-tracker
+    description: "Linear issues via MCP — create, transition, close"
+    needs_mcp: [linear]
+    config_keys:
+      - { name: integrations.issue_tracker.team_key, example: "PLA", required: true }
+    operations:
+      - copy: { from: "adapters/issue-tracker/linear.md", to: "$HOME/.claude/skills/flow-story/adapters/issue-tracker/linear.md" }
+
+  - id: adapter:issue-tracker-github-issues
+    family: issue-tracker
+    description: "GitHub Issues via gh CLI"
+    needs_cli: [gh]
+    config_keys:
+      - { name: integrations.issue_tracker.repo, example: "ghaith/focal", auto_detect: "gh repo view --json nameWithOwner -q .nameWithOwner" }
+    operations:
+      - copy: { from: "adapters/issue-tracker/github-issues.md", to: "$HOME/.claude/skills/flow-story/adapters/issue-tracker/github-issues.md" }
+
+  - id: adapter:issue-tracker-none
+    family: issue-tracker
+    description: "No external issue tracker — sprint.yaml is the source of truth"
+    operations:
+      - copy: { from: "adapters/issue-tracker/none.md", to: "$HOME/.claude/skills/flow-story/adapters/issue-tracker/none.md" }
+
+  # PR platform ──────────────────────────────────────────────────────────────
+  - id: adapter:pr-github
+    family: pr
+    description: "GitHub PRs via gh CLI"
+    needs_cli: [gh]
+    operations:
+      - copy: { from: "adapters/pr/github.md", to: "$HOME/.claude/skills/flow-story/adapters/pr/github.md" }
+
+  - id: adapter:pr-none
+    family: pr
+    description: "No PR platform — commits go straight to main"
+    operations:
+      - copy: { from: "adapters/pr/none.md", to: "$HOME/.claude/skills/flow-story/adapters/pr/none.md" }
+
+  # E2E ──────────────────────────────────────────────────────────────────────
+  - id: adapter:e2e-playwright-mcp
+    family: e2e
+    description: "Headless browser journey via Playwright MCP"
+    needs_mcp: [playwright]
+    config_keys:
+      - { name: integrations.e2e.base_url, example: "http://localhost:3000" }
+      - { name: integrations.e2e.journeys_dir, default: "docs/flow/journeys" }
+    runtime_deps:
+      - { pkg_manager: "auto", install_cmd: "add -D @playwright/test", post_install: "npx playwright install chromium" }
+    operations:
+      - copy: { from: "adapters/e2e/playwright-mcp.md", to: "$HOME/.claude/skills/flow-story/adapters/e2e/playwright-mcp.md" }
+
+  - id: adapter:e2e-none
+    family: e2e
+    description: "No E2E adapter — Flow skips the E2E phase"
+    operations:
+      - copy: { from: "adapters/e2e/none.md", to: "$HOME/.claude/skills/flow-story/adapters/e2e/none.md" }
+
+  # Verify ───────────────────────────────────────────────────────────────────
+  - id: adapter:verify-make
+    family: verify
+    description: "Runs `make verify` as the project verification gate"
+    needs_cli: [make]
+    detect: "test -f Makefile && grep -q '^verify:' Makefile"
+    operations:
+      - copy: { from: "adapters/verify/make.md", to: "$HOME/.claude/skills/flow-story/adapters/verify/make.md" }
+
+  - id: adapter:verify-pnpm
+    family: verify
+    description: "Runs `pnpm verify` (or another script) as the verification gate"
+    needs_cli: [pnpm]
+    config_keys:
+      - { name: integrations.verify.script, default: "verify" }
+    operations:
+      - copy: { from: "adapters/verify/pnpm.md", to: "$HOME/.claude/skills/flow-story/adapters/verify/pnpm.md" }
+
+  - id: adapter:verify-custom
+    family: verify
+    description: "User-defined shell command as the verification gate"
+    config_keys:
+      - { name: integrations.verify.command, example: "cargo check && cargo test", required: true }
+    operations:
+      - copy: { from: "adapters/verify/custom.md", to: "$HOME/.claude/skills/flow-story/adapters/verify/custom.md" }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MCP SERVERS
+# ─────────────────────────────────────────────────────────────────────────────
+mcps:
+
+  - id: context7
+    name: "Context7"
+    description: "Up-to-date library/API docs lookup"
+    package: "@upstash/context7-mcp"
+    install_cmd: "claude mcp add context7 npx @upstash/context7-mcp"
+    detect_cmd:  "claude mcp list 2>/dev/null | grep -q '^context7'"
+    scope_default: home
+    auth: none
+
+  - id: playwright
+    name: "Playwright MCP"
+    description: "Headless browser for E2E + UI verification"
+    package: "@playwright/mcp"
+    install_cmd: "claude mcp add playwright npx @playwright/mcp@latest"
+    detect_cmd:  "claude mcp list 2>/dev/null | grep -q '^playwright'"
+    scope_default: project
+    auth: none
+
+  - id: linear
+    name: "Linear MCP"
+    description: "Linear issues — create, transition, query"
+    package: "@tacticlaunch/mcp-linear"
+    install_cmd: "claude mcp add linear npx @tacticlaunch/mcp-linear"
+    detect_cmd:  "claude mcp list 2>/dev/null | grep -q '^linear'"
+    scope_default: home
+    auth: oauth_browser
+    auth_instructions: |
+      After install, restart Claude Code, then run /mcp.
+      Click "linear" → "Authenticate" → grant access in the browser tab.
+
+  - id: github-mcp
+    name: "GitHub MCP (optional)"
+    description: "GitHub repo/PR/issue access via MCP. Optional — gh CLI usually sufficient."
+    package: "@modelcontextprotocol/server-github"
+    install_cmd: "claude mcp add github npx @modelcontextprotocol/server-github"
+    detect_cmd:  "claude mcp list 2>/dev/null | grep -q '^github'"
+    scope_default: home
+    auth: api_token
+    env:
+      - { name: GITHUB_PERSONAL_ACCESS_TOKEN, secret: true, prompt: "GitHub PAT (scopes: repo, read:org):" }
+    optional: true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# UPSTREAMS — delegation config for BMad + ECC
+# ─────────────────────────────────────────────────────────────────────────────
+upstreams:
+
+  bmad:
+    name: "BMad Method"
+    repo: "https://github.com/bmad-code-org/BMAD-METHOD"
+    homepage: "https://bmad-code-org.github.io/BMAD-METHOD/"
+    detect:
+      check_cmd: "test -d _bmad || test -d ~/.claude/bmad"
+      version_path_candidates:
+        - "_bmad/_config/manifest.yaml"
+        - "_bmad/install-manifest.yaml"
+    installer:
+      cmd: "npx bmad-method install"
+      base_args: "--tools claude-code --yes"
+      module_arg: "--modules"
+      config_arg: "--set"
+      directory_arg: "--directory"
+    available_modules: [bmm, cis, bmb, tea, core]
+    curated_subsets:
+      none:
+        description: "Skip BMad entirely"
+        modules: []
+      planning-only:
+        description: "PRD + architecture + epics (no per-story BMad)"
+        modules: [bmm]
+        config: { bmm.skill_set: "planning" }
+      planning-plus-research:
+        description: "Planning + market/domain/technical research"
+        modules: [bmm]
+        config: { bmm.skill_set: "planning-research" }
+      creative-thinking:
+        description: "CIS module — brainstorming, design thinking, storytelling"
+        modules: [cis]
+      test-architecture:
+        description: "TEA module — test design, ATDD, NFR"
+        modules: [tea]
+      full:
+        description: "All BMad modules"
+        modules: [bmm, cis, bmb, tea]
+      passthrough:
+        description: "Run BMad's own interactive installer — Flow doesn't choose"
+        modules: null
+
+  ecc:
+    name: "Everything Claude Code"
+    repo: "https://github.com/affaan-m/everything-claude-code"
+    detect:
+      check_cmd: "test -d ~/.claude/rules/common"
+      version_path: "~/.claude/rules/VERSION"
+      installer_path_candidates:
+        - "~/dev-tools/everything-claude-code/install.sh"
+        - "/usr/local/lib/node_modules/@everything-claude-code/ecc/install.sh"
+    installer:
+      cmd: "{installer_path}"
+      cmd_fallback: "npx @everything-claude-code/ecc install"
+      base_args: "--target claude"
+      profile_arg: "--profile"
+      with_arg: "--with"
+      without_arg: "--without"
+      dry_run_arg: "--dry-run"
+      json_arg: "--json"
+    available_profiles: [minimal, core, developer, security, research, full]
+    curated_subsets:
+      none:
+        description: "Skip ECC — assume already installed or not needed"
+        profile: null
+      flow-essentials:
+        description: "Just what Flow needs: plan + code-review + prp-*"
+        profile: core
+        without: [baseline:hooks]
+      flow-essentials-plus-tdd:
+        description: "Essentials + TDD + test-coverage + E2E"
+        profile: developer
+        without: [baseline:hooks, capability:research]
+      security-heavy:
+        description: "Adds security-reviewer agent + security framework guidance"
+        profile: security
+        without: [baseline:hooks]
+      research-heavy:
+        description: "Adds research APIs + business/voice skills"
+        profile: research
+      use-ecc-default:
+        description: "ECC's own default developer profile, unmodified"
+        profile: developer
+      passthrough:
+        description: "Run ECC's installer with no overrides — ECC chooses"
+        profile: null
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PROFILES — named bundles users pick during /flow init
+# ─────────────────────────────────────────────────────────────────────────────
+profiles:
+
+  minimal:
+    description: "Bare Flow — no upstreams, no adapters, just sprint.yaml + story files"
+    flow_components:
+      - core:flow-skills
+      - core:flow-templates
+      - core:flow-state-store
+    adapters:
+      - adapter:issue-tracker-none
+      - adapter:pr-none
+      - adapter:e2e-none
+      - adapter:verify-custom
+    mcps: []
+    bmad_subset: none
+    ecc_subset: none
+
+  mini:
+    description: "Solo dev, single repo, GitHub, light review"
+    extends: minimal
+    adapters:
+      - adapter:issue-tracker-github-issues
+      - adapter:pr-github
+      - adapter:verify-make
+    mcps: [context7]
+    bmad_subset: none
+    ecc_subset: flow-essentials
+
+  standard:
+    description: "Solo or small team, formal review + PRs, Playwright"
+    extends: mini
+    adapters:
+      - adapter:e2e-playwright-mcp
+    mcps: [context7, playwright]
+    bmad_subset: planning-only
+    ecc_subset: flow-essentials-plus-tdd
+
+  team:
+    description: "Multi-repo, team, issue tracker (Linear default), sibling PRs"
+    extends: standard
+    adapters:
+      - adapter:issue-tracker-linear  # overrides github-issues from mini
+    mcps: [context7, playwright, linear]
+    bmad_subset: full
+    ecc_subset: flow-essentials-plus-tdd
+    features:
+      multi_repo: true
+      multi_llm_review: true
+      audit_log: true

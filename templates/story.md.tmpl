@@ -1,0 +1,35 @@
+# {{story_id}} — {{title}}
+
+**Epic:** {{epic_id}} — {{epic_title}}
+{{#if issue}}**Issue:** {{issue}}{{/if}}
+**Tags:** {{tags_csv}}
+**Status:** {{status}}
+
+**Why:** {{why}}
+
+{{#if refs}}
+**Refs:**
+{{#each refs}}
+- {{this}}
+{{/each}}
+{{/if}}
+
+## Acceptance
+{{#each acceptance_criteria}}
+- [ ] {{this}}
+{{/each}}
+
+## Files
+{{#each files}}
+- {{this}}
+{{/each}}
+
+{{#if has_e2e}}
+## E2E Journey
+- navigate /
+- assert visible "{{expected_heading}}"
+- assert no console errors
+{{/if}}
+
+## Notes
+<!-- Decisions, deferred items, follow-ups appear here during implementation. -->

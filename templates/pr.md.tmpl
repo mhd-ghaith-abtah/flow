@@ -1,0 +1,40 @@
+## Summary
+
+{{summary}}
+
+{{issue_ref}}
+
+## What changed
+
+{{#each changes}}
+- {{this}}
+{{/each}}
+
+## Test plan
+
+{{#each acceptance_criteria}}
+- [ ] {{this}}
+{{/each}}
+
+{{#if has_e2e}}
+## E2E
+
+Journey ran against {{base_url}}. Artifacts at `docs/flow/artifacts/{{story_id}}/`.
+
+{{#each e2e_passed}}
+- ✓ {{this}}
+{{/each}}
+{{/if}}
+
+{{#if has_verify}}
+## Verify
+
+```bash
+$ {{verify_cmd}}
+{{verify_summary}}
+```
+{{/if}}
+
+---
+
+🌊 Created via [Flow](https://github.com/mhd-ghaith-abtah/flow) · story `{{story_id}}`

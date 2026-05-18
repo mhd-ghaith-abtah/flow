@@ -1,0 +1,56 @@
+{
+  "name": "@mhd-ghaith-abtah/flow",
+  "version": "0.0.1",
+  "description": "Token-light per-story workflow for Claude Code. Delegates to BMad + ECC.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "flow": "bin/flow.js"
+  },
+  "files": [
+    "bin",
+    "lib",
+    "skills",
+    "adapters",
+    "templates",
+    "schemas",
+    "catalog.yaml",
+    "docs",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "test": "node --test 'lib/**/*.test.js'",
+    "smoke": "node bin/flow.js plan --profile standard --dry-run"
+  },
+  "dependencies": {
+    "@inquirer/prompts": "^7.0.0",
+    "ajv": "^8.17.1",
+    "chalk": "^5.3.0",
+    "execa": "^9.5.1",
+    "ora": "^8.1.1",
+    "yaml": "^2.6.1",
+    "yargs-parser": "^21.1.1"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mhd-ghaith-abtah/flow.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mhd-ghaith-abtah/flow/issues"
+  },
+  "homepage": "https://github.com/mhd-ghaith-abtah/flow#readme",
+  "keywords": [
+    "claude-code",
+    "workflow",
+    "sprint",
+    "story",
+    "bmad",
+    "ecc",
+    "spec-driven"
+  ]
+}

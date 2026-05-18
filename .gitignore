@@ -1,0 +1,17 @@
+node_modules/
+dist/
+build/
+.DS_Store
+.env
+.env.*
+!.env.example
+.flow/
+.flow.local/
+*.log
+npm-debug.log*
+.nyc_output/
+coverage/
+.idea/
+.vscode/
+*.tsbuildinfo
+.npm/
