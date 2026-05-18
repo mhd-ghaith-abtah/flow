@@ -3,7 +3,10 @@
 **Goal:** maintain sprint state in `docs/flow/sprint.yaml`. Stories are the unit of work; epics group them; status flows backlog → doing → review → done. Every status change also invokes the active issue-tracker adapter to keep external state in sync.
 
 **Schema invariants** (validated on every write):
-- `stories[].id` matches `^E\d+-\d{3}$` (e.g. `E1-001`)
+- `stories[].id` matches `^E\d+-S?\d{1,3}[a-z]?$`. Accepted forms:
+  - Flow native — `E1-001`, `E1-002`, … (zero-padded three-digit)
+  - BMad-style — `E1-S1`, `E2-S10`, `E3-S9b`, … (kept when migrated from `bmad-create-story` output to preserve continuity)
+  - Both forms can coexist in the same sprint.yaml. `flow-sprint add` continues whichever form the epic already uses.
 - `stories[].status` in `[backlog, doing, review, done, cancelled]`
 - Exactly zero or one story may be in `doing` at any time (enforce one-story-at-a-time per dev unless `mode: team`)
 
@@ -60,7 +63,19 @@
       <ask>Acceptance criteria? One per line. Empty line to finish.</ask>
     </check>
 
-    <action>Compute next story number for this epic: max(stories where epic == {{epic_id}}).id_num + 1, zero-padded to 3 (e.g. `E1-002`). → `{{story_id}}`.</action>
+    <action>Compute the next story id for this epic — **detect format from existing stories first**:
+      1. Collect existing stories in this epic: `{{epic_stories}}` = stories where `epic == {{epic_id}}`.
+      2. Determine `{{id_format}}`:
+         - If `{{epic_stories}}` is non-empty: inspect the FIRST entry's id.
+           - Matches `^E\d+-S\d+[a-z]?$` → format = `bmad` (e.g. `E1-S1`).
+           - Matches `^E\d+-\d{3}$`        → format = `flow-native` (e.g. `E1-001`).
+           - Anything else                  → HALT with "Unrecognized story-id format in epic {{epic_id}}: {{first.id}}. Fix sprint.yaml or pass --id-format=flow-native|bmad."
+         - If `{{epic_stories}}` is empty: use `flow.config.yaml > sprint.default_id_format` (default `bmad` post-migration, `flow-native` for greenfield projects).
+      3. Compute next numeric: `{{next_num}}` = max(parsed numeric part of each existing id) + 1; start at 1 for empty epics.
+      4. Render `{{story_id}}` per format:
+         - `bmad`         → `E{{epic_num}}-S{{next_num}}` (no zero-padding; e.g. `E1-S11`)
+         - `flow-native`  → `E{{epic_num}}-{{next_num.toString().padStart(3, '0')}}` (e.g. `E1-011`)
+    </action>
 
     <action>Generate filename: `{{stories_dir}}/{{story_id}}-{{slug(title)}}.md`.</action>
 
