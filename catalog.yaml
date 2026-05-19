@@ -267,13 +267,42 @@ upstreams:
         description: "Run ECC's installer with no overrides — ECC chooses"
         profile: null
 
+  caveman:
+    name: "Caveman"
+    repo: "https://github.com/JuliusBrussee/caveman"
+    description: "Output-compression layer for Claude Code (~46% input, ~75% output token savings). Flow expects Caveman to be active so its outputs stay tight."
+    detect:
+      check_cmd: "test -f $HOME/.claude/skills/caveman/SKILL.md"
+      session_flag_cmd: "ls $HOME/.claude/skills/caveman 2>/dev/null"
+    installer:
+      cmd: "curl -fsSL https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.sh | bash"
+      verify_after_cmd: "test -f $HOME/.claude/skills/caveman/SKILL.md"
+      security_note: "Caveman ships only via curl-pipe-bash. Flow will surface this and ask for confirmation unless --yes is passed. To inspect the script before running, set $FLOW_INSPECT_INSTALL_SCRIPTS=1 — Flow will download to /tmp first, pause for review, then execute."
+    available_modes: [lite, full, ultra, wenyan]
+    curated_subsets:
+      none:
+        description: "Skip Caveman — only choose this if you have a specific reason (e.g. you already use a different compression layer)"
+        mode: null
+      lite:
+        description: "Light compression. Most readable. Lower savings (~20%)."
+        mode: lite
+      full:
+        description: "Recommended Flow default. ~46% input / ~75% output savings."
+        mode: full
+      ultra:
+        description: "Maximum compression. Some readability loss in long-form responses."
+        mode: ultra
+      wenyan:
+        description: "Classical Chinese-style ultra-compressed mode. Experimental."
+        mode: wenyan
+
 # ─────────────────────────────────────────────────────────────────────────────
 # PROFILES — named bundles users pick during /flow-init
 # ─────────────────────────────────────────────────────────────────────────────
 profiles:
 
   minimal:
-    description: "Bare Flow — no upstreams, no adapters, just sprint.yaml + story files"
+    description: "Bare Flow — no upstreams except Caveman compression, no adapters, just sprint.yaml + story files"
     flow_components:
       - core:flow-skills
       - core:flow-templates
@@ -286,6 +315,7 @@ profiles:
     mcps: []
     bmad_subset: none
     ecc_subset: none
+    caveman_subset: full   # Flow expects Caveman compression — installed by default in every profile
 
   mini:
     description: "Solo dev, single repo, GitHub, light review"
@@ -297,6 +327,7 @@ profiles:
     mcps: [context7]
     bmad_subset: none
     ecc_subset: flow-essentials
+    caveman_subset: full
 
   standard:
     description: "Solo or small team, formal review + PRs, Playwright"
@@ -306,6 +337,7 @@ profiles:
     mcps: [context7, playwright]
     bmad_subset: planning-only
     ecc_subset: flow-essentials-plus-tdd
+    caveman_subset: full
 
   team:
     description: "Multi-repo, team, issue tracker (Linear default), sibling PRs"
@@ -315,6 +347,7 @@ profiles:
     mcps: [context7, playwright, linear]
     bmad_subset: full
     ecc_subset: flow-essentials-plus-tdd
+    caveman_subset: full
     features:
       multi_repo: true
       multi_llm_review: true

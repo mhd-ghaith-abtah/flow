@@ -1,13 +1,18 @@
 # Flow
 
-> Token-light per-story workflow for Claude Code. Delegates to BMad + ECC instead of duplicating them.
+> Token-light per-story workflow for Claude Code. Delegates to BMad + ECC + Caveman instead of duplicating them.
 
 Flow is a thin orchestration layer. It owns three things:
 - Per-story state (`sprint.yaml` + tiny story files)
 - Pluggable adapters (issue tracker, PR platform, E2E, verify)
-- An installer that **invokes BMad and ECC's own installers** so you choose exactly which upstream skills land in your project
+- An installer that **invokes BMad, ECC, and Caveman's own installers** so you choose exactly which upstream pieces land in your project
 
-Everything else is delegated — `/plan`, `/prp-implement`, `/code-review`, `/update-docs` etc. come from [ECC](https://github.com/affaan-m/everything-claude-code); PRD + architecture + epics + retros come from [BMad](https://github.com/bmad-code-org/BMAD-METHOD) when you want them. Flow stitches them together.
+Everything else is delegated:
+- `/plan`, `/prp-implement`, `/code-review`, `/update-docs` etc. come from [ECC](https://github.com/affaan-m/everything-claude-code)
+- PRD + architecture + epics + retros come from [BMad](https://github.com/bmad-code-org/BMAD-METHOD) when you want them
+- Response-token compression comes from [Caveman](https://github.com/JuliusBrussee/caveman) (default `full` mode, ~46% input / ~75% output savings, auto-installed by `/flow-init`)
+
+Flow stitches them together.
 
 ## Why
 

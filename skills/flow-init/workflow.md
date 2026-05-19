@@ -95,6 +95,12 @@
     Default for {{profile}}: {{profile.ecc_subset}}
   </ask>
 
+  <ask>Q7b — Caveman compression mode? (Flow expects Caveman installed — it cuts response tokens ~46% input / ~75% output)
+    Options: {{ catalog.upstreams.caveman.curated_subsets keys }}
+    Default for {{profile}}: {{profile.caveman_subset}}  (typically `full`)
+    Choose `none` only if you have a specific reason. If Caveman isn't installed, Flow will offer to install it via curl-pipe-bash with a confirmation prompt.
+  </ask>
+
   <check if="{{bmad_installed}} AND {{project has docs/_bmad-output/implementation-artifacts/sprint-status.yaml}}">
     <ask>Q8 — Migrate existing BMad state to Flow?
       [y] Import sprint-status.yaml + story files + deferred-work into docs/flow/, archive _bmad/
@@ -184,6 +190,48 @@
     <action>Resolve `{{ecc_installer_path}}` from catalog.upstreams.ecc.detect.installer_path_candidates. If none found, fall back to `npx @everything-claude-code/ecc install`.</action>
     <action>Run `{{ecc_cmd}}` via execa (stream live). Capture exit code.</action>
     <action>Record in `{{home_state}}.upstreams.ecc`.</action>
+  </check>
+</step>
+
+<step n="8b" goal="Execute — install Caveman (default: required for all profiles)">
+  <check if="{{plan.caveman_subset}} != none">
+    <action>Run detection: `{{catalog.upstreams.caveman.detect.check_cmd}}` → `{{caveman_present}}`.</action>
+
+    <check if="{{caveman_present}} == true">
+      <output>✓ Caveman already installed — leaving in place.</output>
+      <action>Record in `{{home_state}}.upstreams.caveman`: { subset, mode, installed: pre-existing, ran_at }.</action>
+    </check>
+
+    <check if="{{caveman_present}} == false">
+      <output>📦 Caveman not detected. About to install via curl-pipe-bash:
+
+      $ {{catalog.upstreams.caveman.installer.cmd}}
+
+      Caveman is an output-compression layer ({{plan.caveman_subset}} mode). It modifies all Claude Code sessions globally to cut response tokens.
+      Source: {{catalog.upstreams.caveman.repo}}
+      </output>
+
+      <check if="$FLOW_INSPECT_INSTALL_SCRIPTS == 1">
+        <action>Download the script to `/tmp/caveman-install.sh` first. Show the user the file path and a `wc -l` count. Ask "Inspect? [Y/n]" — if Y, print the file. Then ask "Run? [Y/n]".</action>
+      </check>
+      <check if="$FLOW_INSPECT_INSTALL_SCRIPTS != 1 AND NOT --yes">
+        <ask>Run the curl-pipe-bash install? [Y/n/inspect]</ask>
+        <check if="user picks inspect">
+          <action>Switch behavior to download-first (as if $FLOW_INSPECT_INSTALL_SCRIPTS=1). Re-ask.</action>
+        </check>
+      </check>
+
+      <action>Execute the install command via Bash. Stream output. Capture exit code.</action>
+      <action>Verify install: run `{{catalog.upstreams.caveman.installer.verify_after_cmd}}`. If it fails, HALT with "Caveman installer reported success but verification failed. Check {{path}}".</action>
+
+      <action>Set Caveman mode to `{{plan.caveman_mode}}` (from the chosen subset). Caveman's install script may handle this; if not, document the post-install command the user should run (e.g. `/caveman full`).</action>
+
+      <action>Record in `{{home_state}}.upstreams.caveman`: { subset, mode, installed_at, source: "curl-pipe-bash", repo, exit_code }.</action>
+    </check>
+  </check>
+
+  <check if="{{plan.caveman_subset}} == none">
+    <output>⚠ Caveman skipped via explicit `none` subset. Flow's outputs may consume more tokens than expected. To re-enable later: `/flow init --update` and pick a caveman_subset.</output>
   </check>
 </step>
 
