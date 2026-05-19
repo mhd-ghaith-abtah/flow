@@ -19,7 +19,7 @@ if [[ "${1:-}" == "--unlink" ]]; then
   mode="unlink"
 fi
 
-skills=(flow-init flow-sprint flow-story)
+skills=(flow-init flow-sprint flow-story flow-doctor)
 
 unlink_skill() {
   local skill="$1"
@@ -61,6 +61,9 @@ link_skill() {
     flow-sprint)
       ln -sf "$REPO_ROOT/adapters"  "$target/adapters"
       ln -sf "$REPO_ROOT/templates" "$target/templates"
+      ;;
+    flow-doctor)
+      ln -sf "$REPO_ROOT/adapters" "$target/adapters"
       ;;
   esac
 

@@ -20,7 +20,7 @@
     - If env `FLOW_REPO_ROOT` is set, use it.
     - Else if running from `~/.claude/skills/flow-init/`, walk up to find a directory containing `catalog.yaml` (npm install path is typically `~/.npm-global/lib/node_modules/@mhd-ghaith-abtah/flow/`).
     - Else if the CWD contains `catalog.yaml`, use the CWD (dev mode).
-    - Else HALT with "catalog.yaml not found — re-install Flow via `npx @mhd-ghaith-abtah/flow-init`".
+    - Else HALT with "catalog.yaml not found — re-install Flow (clone https://github.com/mhd-ghaith-abtah/flow and run `tools/dev-link.sh`, or wait for npm v0.7).".
   </action>
 
   <action>Load `{{catalog}}` from `{{repo_root}}/catalog.yaml`. Validate against `{{repo_root}}/schemas/catalog.schema.json` if present.</action>
@@ -327,6 +327,7 @@
   <action>Write `{{home_state}}` to `{{home_scope_root}}/flow/install-state.json` (pretty JSON, schema version `flow.install.v1`).</action>
   <action>Write `{{project_state}}` to `{{project_scope_root}}/flow/install-state.json`.</action>
   <action>Ensure `{{project_scope_root}}/flow/install-state.json` is in `.gitignore` (don't commit secrets references).</action>
+  <action>Ensure `flow.config.local.yaml` is in `.gitignore` (per-developer override of `flow.config.yaml`; the base config IS committed for team-share, the local override is not).</action>
   <action>Ensure `~/.claude/.env.flow` has `chmod 600` if it was created in Q9.</action>
 </step>
 

@@ -18,12 +18,13 @@ flow_components:
 
   - id: core:flow-skills
     family: core
-    description: "The three Flow skills (flow-init, flow-sprint, flow-story)"
+    description: "The four Flow skills (flow-init, flow-sprint, flow-story, flow-doctor)"
     required: true
     operations:
       - copy: { from: "skills/flow-init",   to: "$HOME/.claude/skills/flow-init"   }
       - copy: { from: "skills/flow-sprint", to: "$HOME/.claude/skills/flow-sprint" }
       - copy: { from: "skills/flow-story",  to: "$HOME/.claude/skills/flow-story"  }
+      - copy: { from: "skills/flow-doctor", to: "$HOME/.claude/skills/flow-doctor" }
 
   - id: core:flow-templates
     family: core
