@@ -100,6 +100,8 @@
   <action>Read in parallel:
     - `{{branch}}` = `git rev-parse --abbrev-ref HEAD`
     - `{{commits_ahead}}` = `git rev-list --count origin/main..HEAD` (fall back to `main` if no `origin/main`)
+    - `{{has_uncommitted}}` = `git status --porcelain` non-empty (modified, untracked, or staged-but-uncommitted)
+    - `{{has_changes}}` = `{{commits_ahead}} > 0` OR `{{has_uncommitted}}` (work exists to review/verify/commit, regardless of whether it's been committed yet)
     - `{{has_plan_section}}` = does `{{story_file_content}}` contain `## Plan` followed by non-comment content
     - `{{review_done}}` = does `{{story_file_content}}` contain `## Review Notes`
     - `{{verify_passed}}` = does `{{story_file_content}}` contain `## Verified`
@@ -107,15 +109,15 @@
     - `{{pr_number}}` + `{{pr_state}}` = if pr_adapter != none, query GH for PR on this branch
   </action>
 
-  <action>Phase decision (first match wins):
+  <action>Phase decision (first match wins). **Important:** review and verify run on uncommitted work; we don't require a commit before they're eligible. commit-pr happens AFTER they pass, bundling everything into a single commit.
     - `{{story.status}} == 'done'` → `archived`
     - `{{story.status}} == 'review'` AND `{{pr_state}} == 'merged'` → `merge-done`
     - `{{story.status}} == 'review'` → `awaiting-merge`
-    - `{{commits_ahead}} > 0` AND `{{verify_passed}}` AND e2e ok or n/a AND NOT `{{pr_number}}` → `commit-pr`
-    - `{{commits_ahead}} > 0` AND `{{review_done}}` AND NOT `{{verify_passed}}` → `verify`
-    - `{{commits_ahead}} > 0` AND NOT `{{review_done}}` → `review`
-    - `{{branch}}` starts `flow/` AND NOT `{{commits_ahead}}` AND (`{{has_plan_section}}` OR `--skip-plan`) → `implement`
-    - `{{branch}}` starts `flow/` AND NOT `{{has_plan_section}}` AND NOT `--skip-plan` → `plan`
+    - `{{has_changes}}` AND `{{verify_passed}}` AND (e2e ok or n/a) AND `{{review_done}}` AND NOT `{{pr_number}}` → `commit-pr`
+    - `{{has_changes}}` AND `{{review_done}}` AND NOT `{{verify_passed}}` → `verify`
+    - `{{has_changes}}` AND NOT `{{review_done}}` → `review`
+    - `{{branch}}` starts `flow/` AND NOT `{{has_changes}}` AND (`{{has_plan_section}}` OR `--skip-plan`) → `implement`
+    - `{{branch}}` starts `flow/` AND NOT `{{has_changes}}` AND NOT `{{has_plan_section}}` AND NOT `--skip-plan` → `plan`
     - `{{story.status}} == 'doing'` AND `{{branch}} == 'main'` → `resume-branch`
     - else → `unknown`
   </action>
@@ -263,6 +265,13 @@
   <check if="phase == 'commit-pr'">
     <action>Compose commit message: derive `type` from story.tags (ui→feat, fix→fix, chore→chore, default feat) and form `<type>: {{story.id}} — {{story.title}}`.</action>
 
+    <action>Inventory what needs committing:
+      - `{{has_uncommitted}}` files (from `git status --porcelain`) — the implementation
+      - The story file with its appended `## Review Notes` / `## Verified` / `## E2E` / `## Docs` markers
+      - The sprint.yaml entry (will be flipped to `review` AFTER prp-pr returns; staged in this same commit if the project's convention is "single-commit-then-flip", separate if "commit then flip then commit again")
+      - Any deferred-work updates
+    </action>
+
     <output>💾 commit-pr → ready to commit + open PR.
 
     Commit message: `{{commit_msg}}`
@@ -355,9 +364,10 @@
 | auto-stub | sprint.yaml entry, no story file | scaffold 5–7 line stub from conventions | — |
 | plan | no `## Plan` populated | invoke `plan` skill (CONFIRM gate) — or auto-write placeholder under `--auto`/`--skip-plan` | plan's CONFIRM (skipped under `--auto`) |
 | implement | branch + plan present, no commits | invoke `prp-implement` | — |
-| review | commits, no Review Notes | spawn reviewer(s) parallel; auto-append clean findings | CRITICAL/HIGH (always); skipped under `--no-review` |
+| review | changes exist (committed or uncommitted), no Review Notes | spawn reviewer(s) parallel on `git diff`; auto-append clean findings | CRITICAL/HIGH (always); skipped under `--no-review` |
 | verify | reviewed, no Verified marker | run verify adapter's cmd | non-zero exit (always); skipped under `--no-verify` / `--no-tests` |
 | e2e | story tags trigger, e2e adapter active | run journey via adapter | journey failure (always); skipped under `--no-e2e` / `--no-tests` |
+| commit-pr | reviewed AND verified AND e2e-ok | bundle uncommitted + staged + story markers into one commit, open PR | pre-commit Y/n (skipped under `--auto`) |
 | docs | mode ≥ standard, verified, no Docs marker | invoke `update-docs` (and `update-codemaps` in team) | — |
 | commit-pr | verified, no PR | propose commit; ask Y/n; invoke `prp-commit` + `prp-pr` | user n (skipped if --auto) |
 | awaiting-merge | PR open | print PR link + wait | always (need human merge) |
