@@ -2,6 +2,29 @@
 
 Thanks for considering a contribution. Flow is small, opinionated, and prefers tight conventions over loose ones — please read this before opening a PR.
 
+## Repo state
+
+- **License:** MIT
+- **Maintainer:** [@mhd-ghaith-abtah](https://github.com/mhd-ghaith-abtah)
+- **Governance:** single-maintainer, no CLA, no CODEOWNERS, no required reviewers
+- **Issue tracker:** GitHub Issues at [github.com/mhd-ghaith-abtah/flow/issues](https://github.com/mhd-ghaith-abtah/flow/issues)
+- **Internal backlog:** `docs/flow/sprint.yaml` (Flow dogfoods Flow). Browse there to see what's already planned before opening a duplicate issue.
+- **Release cadence:** small + frequent. v0.7.0 shipped 25-of-28 review items on day 1. Patches land same-day when reviewable.
+- **CI gates:** every PR runs `npm test` (Node 20 + 22), smoke-tests four profiles, shellchecks `tools/`, and enforces the CHANGELOG-touched rule.
+
+**Anyone with a GitHub account can contribute.** Fork → branch → PR. No special access needed.
+
+**Good first issues** (small, well-scoped, visible in `docs/flow/sprint.yaml`):
+- `E5-006` — CHANGELOG line-length CI enforcement
+- `E5-009` — `/flow-sprint scope-review --apply-from <path>` (implement or strip the false promise)
+- Any new adapter from the v0.2 list in `docs/adapters.md` (jira, gitlab, bitbucket, cypress, slack, discord)
+
+**Pre-PR habits the maintainer values**
+- Open an issue first if the change is non-trivial (>50 LOC or any new file)
+- Reference an existing sprint.yaml story id (`E3-007a`) in the PR title or body if your work maps to one
+- Caveman style is fine in commit bodies and PR descriptions; code itself stays normal English
+- Surface scope creep — if your PR grew past the original intent, say so in the description rather than hiding it
+
 ## Setup
 
 ```bash
