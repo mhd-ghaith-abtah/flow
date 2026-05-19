@@ -16,6 +16,19 @@ project: flow
 generated: 2026-05-19
 last_updated: 2026-05-19
 
+metadata:
+  scope_reviews:
+    - date: 2026-05-19
+      report_path: docs/flow/scope-reviews/2026-05-19.md
+      suggested_counts: { merges: 3, drops: 3, splits: 3, adds: 7, epic_changes: 3 }
+      applied_counts:   { merges: 3, drops: 3, splits: 3, adds: 7, epic_changes: 1 }
+      notes: |
+        First dogfood run on Flow's own backlog. Light epic-axis change applied (rename E5
+        FOLLOWUP → "CLI + release-hardening" + note v0.8 re-cut plan). Full structural re-cut
+        deferred to v0.8 when new stories actually land — rebucketing 26/32 done stories was
+        deemed thrash. Honest postmortem in the report flagged E5 as scope creep
+        (bonus CLI work not on original 28-issue list) and E3-007 docs story as too coarse.
+
 epics:
   - id: E1
     title: BLOCKING — Make the CLI actually work and verify it
@@ -34,8 +47,19 @@ epics:
     description: Curl-pipe-bash, release process, CHANGELOG-per-push, post-publish testing, Caveman session slowdown, sprint.yaml regex, FAQ gap, adapter symlink edge.
 
   - id: E5
-    title: FOLLOWUP — Out-of-list improvements that fell out of v0.7 work
-    description: Bonus capabilities surfaced by closing the 28: flow CLI parity (doctor, install, add/remove), broader test coverage.
+    title: CLI + release-hardening
+    description: |
+      Was "FOLLOWUP — out-of-list improvements" through v0.7. Renamed at scope-review-2026-05-19
+      after the dogfood report flagged FOLLOWUP as a Misc-bucket anti-pattern. Holds:
+        - flow CLI parity (doctor / install / add / remove) — shipped in v0.7 (E5-001)
+        - --repair-upstream flag — backlog (E5-005)
+        - CHANGELOG line-length CI — backlog (E5-006)
+        - Multi-repo team profile — wontfix-until-demand (E5-007)
+        - Post-publish smoke — merged into E1-002
+      v0.8 should re-cut all open work by story-family (`cli`, `caveman-scope`, `release-pipeline`,
+      `observability`, `docs`, `tests`) and demote severity to a `priority:` field on each story.
+      E1 BLOCKING is effectively closed (only npm-publish E1-002 left); retire E1 after v0.8 cut
+      and move E1-002 into a `release` epic alongside E4-002 + E5-005..006.
 
 stories:
   # ── E1 BLOCKING ────────────────────────────────────────────────────────────
@@ -45,14 +69,44 @@ stories:
     status: done
     tags: [cli, foundational]
     closed_in: 7832ceb
+    split_into: [E1-001a, E1-001b, E1-001c]
+
+  - id: E1-001a
+    title: flow plan resolver + catalog loader (lib/catalog.js)
+    epic: E1
+    status: done
+    tags: [cli, foundational]
+    closed_in: 7832ceb
+    split_from: E1-001
+
+  - id: E1-001b
+    title: flow init wiring + Claude CLI dispatcher (lib/commands/init.js)
+    epic: E1
+    status: done
+    tags: [cli, foundational]
+    closed_in: 7832ceb
+    split_from: E1-001
+
+  - id: E1-001c
+    title: Profile inheritance + cycle detection in resolveProfile
+    epic: E1
+    status: done
+    tags: [safety, catalog]
+    closed_in: 7832ceb
+    split_from: E1-001
 
   - id: E1-002
-    title: Publish @mhd-ghaith-abtah/flow to npm
+    title: npm publish + post-publish smoke
     epic: E1
     status: backlog
-    tags: [release, publish]
+    tags: [release, publish, smoke]
+    merged:
+      - E4-004
     references:
       - tools/release.sh
+    acceptance_criteria:
+      - "npm publish --access public from repo root"
+      - "npm install -g @mhd-ghaith-abtah/flow in clean env → flow plan --profile standard runs without error"
 
   - id: E1-003
     title: Bootstrap test suite + CI
@@ -60,6 +114,15 @@ stories:
     status: done
     tags: [tests, ci]
     closed_in: e73f4bb
+
+  - id: E1-004
+    title: Strip premature npx install claim from README
+    epic: E1
+    status: done
+    tags: [docs, release]
+    closed_in: 7832ceb
+    added_via: scope-review-2026-05-19
+    notes: "Retroactive story. Shipped under CHANGELOG [0.7.0] Changed bullet #1 with no story attribution."
 
   # ── E2 HIGH ────────────────────────────────────────────────────────────────
   - id: E2-001
@@ -89,6 +152,23 @@ stories:
     status: done
     tags: [skill, observability]
     closed_in: 7832ceb
+    split_into: [E2-004a, E2-004b]
+
+  - id: E2-004a
+    title: /flow-doctor skill scaffold (catalog / state / config / adapters / CLIs / MCPs)
+    epic: E2
+    status: done
+    tags: [skill, observability]
+    closed_in: 7832ceb
+    split_from: E2-004
+
+  - id: E2-004b
+    title: /flow-doctor known-bug probes (caveman-shrink, severity-labels, plan markers, version drift, symlink kind, caveman global scope)
+    epic: E2
+    status: done
+    tags: [skill, observability, probes]
+    closed_in: e73f4bb
+    split_from: E2-004
 
   - id: E2-005
     title: Implement /flow uninstall
@@ -98,10 +178,12 @@ stories:
     closed_in: e73f4bb
 
   - id: E2-006
-    title: Gate Caveman activation per project (upstream PR + Flow marker)
+    title: Caveman project-scope gating (upstream PR + slowdown fix)
     epic: E2
     status: review
-    tags: [caveman, scope]
+    tags: [caveman, scope, perf]
+    merged:
+      - E4-005
     references:
       - https://github.com/JuliusBrussee/caveman/pull/407
 
@@ -144,10 +226,12 @@ stories:
   - id: E3-005
     title: Dogfood /flow-sprint scope-review on Flow's own backlog
     epic: E3
-    status: backlog
+    status: done
     tags: [dogfood, validation]
+    closed_in: scope-review-2026-05-19
     references:
       - docs/flow/sprint.yaml
+      - docs/flow/scope-reviews/2026-05-19.md
 
   - id: E3-006
     title: Fix commit-pr double-compression risk
@@ -162,6 +246,31 @@ stories:
     status: done
     tags: [docs]
     closed_in: 7832ceb
+    split_into: [E3-007a, E3-007b, E3-007c]
+
+  - id: E3-007a
+    title: docs/quickstart + docs/profiles
+    epic: E3
+    status: done
+    tags: [docs]
+    closed_in: 7832ceb
+    split_from: E3-007
+
+  - id: E3-007b
+    title: docs/adapters
+    epic: E3
+    status: done
+    tags: [docs]
+    closed_in: 7832ceb
+    split_from: E3-007
+
+  - id: E3-007c
+    title: docs/migrate-from-bmad (incl. backup + rollback prose paired with E3-009 impl)
+    epic: E3
+    status: done
+    tags: [docs, migration]
+    closed_in: 7832ceb
+    split_from: E3-007
 
   - id: E3-008
     title: Document team-share + local-override config pattern
@@ -183,6 +292,15 @@ stories:
     status: done
     tags: [docs, integration]
     closed_in: 7832ceb
+
+  - id: E3-011
+    title: flow.config.local.yaml deep-merge convention (team-share + per-dev override)
+    epic: E3
+    status: done
+    tags: [config, team-share]
+    closed_in: 7832ceb
+    added_via: scope-review-2026-05-19
+    notes: "Retroactive story. Shipped under CHANGELOG [0.7.0] Changed bullet #2 with no story attribution."
 
   # ── E4 LOW ─────────────────────────────────────────────────────────────────
   - id: E4-001
@@ -209,7 +327,8 @@ stories:
   - id: E4-004
     title: Post-publish smoke test (npm install -g + flow plan)
     epic: E4
-    status: backlog
+    status: cancelled
+    cancelled_reason: "Merged into E1-002 (npm publish + post-publish smoke) — same blocker, same fix"
     tags: [release, smoke]
     references:
       - E1-002
@@ -217,7 +336,8 @@ stories:
   - id: E4-005
     title: Caveman session slowdown in non-Flow projects
     epic: E4
-    status: review
+    status: cancelled
+    cancelled_reason: "Merged into E2-006 (Caveman project-scope gating) — symptom of same root cause"
     tags: [caveman, scope, perf]
     references:
       - E2-006
@@ -245,25 +365,68 @@ stories:
 
   # ── E5 FOLLOWUP ────────────────────────────────────────────────────────────
   - id: E5-001
-    title: Wire flow doctor CLI (parity with /flow-doctor skill)
+    title: flow CLI parity (doctor / install / add / remove)
     epic: E5
-    status: backlog
+    status: done
     tags: [cli, parity]
+    merged:
+      - E5-002
+      - E5-003
+    closed_in: 0efbda0
 
   - id: E5-002
     title: Wire flow install CLI (headless install path)
     epic: E5
-    status: backlog
+    status: cancelled
+    cancelled_reason: "Merged into E5-001 (flow CLI parity) — shipped together in 0efbda0"
     tags: [cli, parity, ci]
 
   - id: E5-003
     title: Wire flow add + flow remove (single-adapter swap)
     epic: E5
-    status: backlog
+    status: cancelled
+    cancelled_reason: "Merged into E5-001 (flow CLI parity) — shipped together in 0efbda0"
     tags: [cli, parity]
 
   - id: E5-004
     title: Test coverage for lib/commands/plan.js + uninstall.js
     epic: E5
-    status: backlog
+    status: done
     tags: [tests, coverage]
+    closed_in: 0efbda0
+
+  - id: E5-005
+    title: --repair-upstream <name> flag (reinstall pinned upstream version after drift)
+    epic: E5
+    status: backlog
+    tags: [cli, upstream-drift]
+    added_via: scope-review-2026-05-19
+    promoted_from: deferred.md
+    notes: "Doctor probe surfaces drift; remediation is currently manual. Implement when first user hits drift in production."
+
+  - id: E5-006
+    title: CHANGELOG line-length CI enforcement
+    epic: E5
+    status: backlog
+    tags: [ci, process]
+    added_via: scope-review-2026-05-19
+    promoted_from: deferred.md
+    notes: "CONTRIBUTING.md says \"one-line entries\". No enforcement. Add lint step to ci.yml that flags wrapped CHANGELOG entries."
+
+  - id: E5-007
+    title: Multi-repo support for team profile
+    epic: E5
+    status: wontfix-until-demand
+    tags: [multi-repo, team-profile]
+    added_via: scope-review-2026-05-19
+    promoted_from: deferred.md
+    notes: "Catalog advertises features.multi_repo: true for team profile but no impl. Defer until first multi-repo user surfaces an actual need. The phantom feature flag is the bug, not the missing impl."
+
+  - id: E5-008
+    title: Smoke-test all four profiles in CI (.github/workflows/ci.yml)
+    epic: E5
+    status: done
+    tags: [ci, tests]
+    closed_in: e73f4bb
+    added_via: scope-review-2026-05-19
+    notes: "Retroactive story. Shipped under CHANGELOG [0.7.0] Added (ci.yml smoke step) with no explicit story."
