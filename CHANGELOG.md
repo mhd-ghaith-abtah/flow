@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] — 2026-05-19
+
 ### Added
 - `/flow-init` now drops a `.caveman-enable` zero-byte marker in the project root. Pairs with the upstream Caveman PR ([JuliusBrussee/caveman#407](https://github.com/JuliusBrussee/caveman/pull/407)) that adds project-scope gating via `.caveman-enable` / `.caveman-disable` markers + env var + config allow/deny lists. Flow's own repo carries the marker so contributors keep Caveman active here even with global default flipped to off. Fully closes #9 + #25 once the upstream PR merges.
 - `docs/flow/scope-reviews/2026-05-19.md` — first scope-review dogfood run on Flow's own backlog. Spawned background general-purpose agent against `docs/flow/sprint.yaml` + reference docs + git log. Output: 3 merges + 3 drops + 3 splits + 7 adds + 3 epic-reconsiderations proposed; all 3 merges / drops / splits and all 7 adds applied; light epic change (E5 renamed CLI + release-hardening; full re-cut deferred to v0.8). `sprint.yaml` grew 32 → 46 stories with retroactive attribution for hidden CHANGELOG work. Honest postmortem flagged E5 as scope creep and E3-007 docs story as too coarse. Closes #14.
