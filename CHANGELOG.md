@@ -8,10 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `/flow-init` now drops a `.caveman-enable` zero-byte marker in the project root. Pairs with the upstream Caveman PR ([JuliusBrussee/caveman#407](https://github.com/JuliusBrussee/caveman/pull/407)) that adds project-scope gating via `.caveman-enable` / `.caveman-disable` markers + env var + config allow/deny lists. Flow's own repo carries the marker so contributors keep Caveman active here even with global default flipped to off. Fully closes #9 + #25 once the upstream PR merges.
-- `tools/release.sh` migrated mature features now exercised end-to-end via the v0.7.0 cut. No code change — listing for traceability.
-
-### Changed
-- Local `~/.claude/hooks/caveman-{activate,config}.js` patched in place with the project-scope-gating logic from the upstream PR. Backups saved as `*.pre-scope-patch`. Patch will be redundant once the upstream PR merges and the user runs Caveman's installer again.
+- `flow.config.yaml` + `docs/flow/sprint.yaml` + `docs/flow/deferred.md` — Flow now dogfoods Flow. Sprint state maps the 28-issue v0.6.1 review backlog to 5 epics. `/flow-sprint scope-review` can now be run on Flow's own backlog (closes prep for #14).
+- `lib/commands/doctor.js` — `flow doctor` headless health check. Probes catalog parse + schema, install-state at each scope, flow.config.yaml shape, adapter file presence + symlink kind (mixed-state warning), required CLIs in $PATH, upstream pin status. Exit code 0/1/2 for ok/warn/fail. JSON output via `--json`. LLM-dependent probes (MCP responsiveness, severity-label scan) remain in `/flow-doctor` skill.
+- `lib/commands/install.js` — `flow install` headless install path. Runs catalog operations (copy components, ensure dirs, touch state) but intentionally does NOT invoke BMad/ECC/Caveman/MCP installers (those need interactive auth + curl-pipe-bash confirmations). Surfaces clear "next steps" hand-off to `/flow-init` for the remainder.
+- `lib/commands/add.js` + `lib/commands/remove.js` — single-adapter swap via CLI. `flow add adapter:e2e-playwright-mcp --yes` copies adapter files AND updates `flow.config.yaml.adapters.<family>`. `flow remove` flips the family back to its `none` variant (Flow expects SOME adapter per family) without deleting adapter files from disk.
+- `lib/commands/plan.test.js` + `lib/commands/uninstall.test.js` — coverage for the CLI command modules. Suite now 18 tests, all green.
 
 ## [0.7.0] — 2026-05-19
 

@@ -1,0 +1,74 @@
+# Flow project configuration — Flow dogfooding Flow.
+#
+# This file lets Flow's own skills (flow-sprint, flow-story, flow-doctor) run
+# against Flow's own backlog. The backlog is the 28-issue list from the v0.6.1
+# review handoff, mapped to epics by severity.
+#
+# Profile is minimal because Flow itself doesn't need most adapters:
+#   - no issue tracker (GitHub Issues handles this naturally)
+#   - no E2E (Flow is a workflow tool, not a web app)
+#   - verify = make (npm test + node bin/flow.js plan smoke)
+# PR adapter is github since we already use gh pr create.
+
+version: 1
+generated: 2026-05-19
+flow_version: 0.7.0
+
+mode: minimal
+
+sprint_file:   docs/flow/sprint.yaml
+stories_dir:   docs/flow/stories
+journeys_dir:  docs/flow/journeys
+retros_dir:    docs/flow/retros
+archive_dir:   docs/flow/archive
+deferred_file: docs/flow/deferred.md
+artifacts_dir: docs/flow/artifacts
+
+adapters:
+  issue_tracker: github-issues
+  pr:            github
+  e2e:           none
+  verify:        custom
+
+integrations:
+  issue_tracker:
+    repo: mhd-ghaith-abtah/flow
+    label_prefix: flow
+  verify:
+    command: "npm test && node bin/flow.js plan --profile standard --json > /dev/null"
+
+review:
+  use_separate_model: false
+  auto_hard_review_tags: [auth, payments, migration, pii, security]
+  language_reviewer: typescript-reviewer
+  barrier_timeout_seconds: 900
+
+implement:
+  default: prp-implement
+  use_tdd: false
+  e2e_auto_trigger_tags: []
+  docs_auto_trigger: true
+
+pr:
+  auto_merge_wait_seconds: 90
+
+secrets:
+  store: env_file
+
+reference_docs:
+  - README.md
+  - CONTRIBUTING.md
+  - docs/quickstart.md
+  - docs/adapters.md
+  - docs/profiles.md
+
+upstreams:
+  bmad:
+    installed: false
+    subset: none
+  ecc:
+    installed: false
+    subset: none
+  caveman:
+    installed: true
+    subset: full

@@ -1,0 +1,269 @@
+# Flow's own sprint state — Flow dogfooding Flow.
+#
+# Source: the 28-issue v0.6.1 review handoff. Mapped to 4 epics by severity.
+# 25 of 28 closed in v0.7.0 + post-release commits. 3 remain.
+#
+# Status convention:
+#   backlog    — not started
+#   doing      — branch checked out, work in progress
+#   review     — PR open, awaiting merge
+#   done       — PR merged or commit landed
+#   cancelled  — abandoned
+#   deferred   — moved to docs/flow/deferred.md (out of current scope)
+
+version: 1
+project: flow
+generated: 2026-05-19
+last_updated: 2026-05-19
+
+epics:
+  - id: E1
+    title: BLOCKING — Make the CLI actually work and verify it
+    description: Stub CLI commands, no tests, no CI, no npm publish. The "is this real?" gate before anyone outside the maintainer tries Flow.
+
+  - id: E2
+    title: HIGH — Safety + reliability
+    description: Background-reviewer deadlock, severity-label stripping, MCP mis-registration, missing health check, no uninstall path. Things that bite real users.
+
+  - id: E3
+    title: MEDIUM — Hygiene + correctness
+    description: Marker false-matches, double-compression, polling cost, scope-review unproven, missing schemas, missing docs, team-share path, migration rollback, BMad coexistence.
+
+  - id: E4
+    title: LOW — Polish + release ergonomics
+    description: Curl-pipe-bash, release process, CHANGELOG-per-push, post-publish testing, Caveman session slowdown, sprint.yaml regex, FAQ gap, adapter symlink edge.
+
+  - id: E5
+    title: FOLLOWUP — Out-of-list improvements that fell out of v0.7 work
+    description: Bonus capabilities surfaced by closing the 28: flow CLI parity (doctor, install, add/remove), broader test coverage.
+
+stories:
+  # ── E1 BLOCKING ────────────────────────────────────────────────────────────
+  - id: E1-001
+    title: Implement flow init + flow plan CLI commands
+    epic: E1
+    status: done
+    tags: [cli, foundational]
+    closed_in: 7832ceb
+
+  - id: E1-002
+    title: Publish @mhd-ghaith-abtah/flow to npm
+    epic: E1
+    status: backlog
+    tags: [release, publish]
+    references:
+      - tools/release.sh
+
+  - id: E1-003
+    title: Bootstrap test suite + CI
+    epic: E1
+    status: done
+    tags: [tests, ci]
+    closed_in: e73f4bb
+
+  # ── E2 HIGH ────────────────────────────────────────────────────────────────
+  - id: E2-001
+    title: Cap background-reviewer wait time
+    epic: E2
+    status: done
+    tags: [flow-story, reliability]
+    closed_in: 7832ceb
+
+  - id: E2-002
+    title: Fix caveman-shrink standalone-vs-wrapper registration
+    epic: E2
+    status: done
+    tags: [caveman, mcp]
+    closed_in: 7832ceb
+
+  - id: E2-003
+    title: Preserve CRITICAL/HIGH severity labels through caveman-review
+    epic: E2
+    status: done
+    tags: [flow-story, caveman, safety]
+    closed_in: 7832ceb
+
+  - id: E2-004
+    title: Scaffold /flow-doctor skill
+    epic: E2
+    status: done
+    tags: [skill, observability]
+    closed_in: 7832ceb
+
+  - id: E2-005
+    title: Implement /flow uninstall
+    epic: E2
+    status: done
+    tags: [cli, lifecycle]
+    closed_in: e73f4bb
+
+  - id: E2-006
+    title: Gate Caveman activation per project (upstream PR + Flow marker)
+    epic: E2
+    status: review
+    tags: [caveman, scope]
+    references:
+      - https://github.com/JuliusBrussee/caveman/pull/407
+
+  - id: E2-007
+    title: Plan-resolution path tree cleanup (unreachable Path E/F)
+    epic: E2
+    status: done
+    tags: [flow-story, refactor]
+    closed_in: e73f4bb
+
+  # ── E3 MEDIUM ──────────────────────────────────────────────────────────────
+  - id: E3-001
+    title: Anchored regex for ## Plan / ## Review Notes / ## Verified markers
+    epic: E3
+    status: done
+    tags: [flow-story, correctness]
+    closed_in: 7832ceb
+
+  - id: E3-002
+    title: JSON schemas for catalog + install-state + flow-config
+    epic: E3
+    status: done
+    tags: [schema, validation]
+    closed_in: e73f4bb
+
+  - id: E3-003
+    title: Pin upstream versions (BMad / ECC / Caveman) in install-state
+    epic: E3
+    status: done
+    tags: [pinning, drift-detection]
+    closed_in: e73f4bb
+
+  - id: E3-004
+    title: Cap --auto-merge polling cost (single 90s wait + handoff)
+    epic: E3
+    status: done
+    tags: [flow-story, context-cost]
+    closed_in: 7832ceb
+
+  - id: E3-005
+    title: Dogfood /flow-sprint scope-review on Flow's own backlog
+    epic: E3
+    status: backlog
+    tags: [dogfood, validation]
+    references:
+      - docs/flow/sprint.yaml
+
+  - id: E3-006
+    title: Fix commit-pr double-compression risk
+    epic: E3
+    status: done
+    tags: [flow-story, caveman]
+    closed_in: 7832ceb
+
+  - id: E3-007
+    title: Write docs/quickstart + adapters + profiles + migrate-from-bmad
+    epic: E3
+    status: done
+    tags: [docs]
+    closed_in: 7832ceb
+
+  - id: E3-008
+    title: Document team-share + local-override config pattern
+    epic: E3
+    status: done
+    tags: [config, docs]
+    closed_in: 7832ceb
+
+  - id: E3-009
+    title: Implement migration backup + rollback
+    epic: E3
+    status: done
+    tags: [migration, safety]
+    closed_in: e73f4bb
+
+  - id: E3-010
+    title: Document BMad+Flow+ECC coexistence precedence
+    epic: E3
+    status: done
+    tags: [docs, integration]
+    closed_in: 7832ceb
+
+  # ── E4 LOW ─────────────────────────────────────────────────────────────────
+  - id: E4-001
+    title: Curl-pipe-bash inspection prints SHA-256
+    epic: E4
+    status: done
+    tags: [security, caveman]
+    closed_in: e73f4bb
+
+  - id: E4-002
+    title: Release tooling (tools/release.sh)
+    epic: E4
+    status: done
+    tags: [release, automation]
+    closed_in: e73f4bb
+
+  - id: E4-003
+    title: Document CHANGELOG-on-every-PR convention (CONTRIBUTING.md)
+    epic: E4
+    status: done
+    tags: [docs, process]
+    closed_in: 7832ceb
+
+  - id: E4-004
+    title: Post-publish smoke test (npm install -g + flow plan)
+    epic: E4
+    status: backlog
+    tags: [release, smoke]
+    references:
+      - E1-002
+
+  - id: E4-005
+    title: Caveman session slowdown in non-Flow projects
+    epic: E4
+    status: review
+    tags: [caveman, scope, perf]
+    references:
+      - E2-006
+
+  - id: E4-006
+    title: Loosen sprint.yaml story-id regex for non-BMad formats
+    epic: E4
+    status: done
+    tags: [flow-sprint, format]
+    closed_in: e73f4bb
+
+  - id: E4-007
+    title: Add README FAQ section
+    epic: E4
+    status: done
+    tags: [docs]
+    closed_in: 7832ceb
+
+  - id: E4-008
+    title: Handle adapter symlink mixed real/symlink edge case
+    epic: E4
+    status: done
+    tags: [flow-doctor, edge-case]
+    closed_in: e73f4bb
+
+  # ── E5 FOLLOWUP ────────────────────────────────────────────────────────────
+  - id: E5-001
+    title: Wire flow doctor CLI (parity with /flow-doctor skill)
+    epic: E5
+    status: backlog
+    tags: [cli, parity]
+
+  - id: E5-002
+    title: Wire flow install CLI (headless install path)
+    epic: E5
+    status: backlog
+    tags: [cli, parity, ci]
+
+  - id: E5-003
+    title: Wire flow add + flow remove (single-adapter swap)
+    epic: E5
+    status: backlog
+    tags: [cli, parity]
+
+  - id: E5-004
+    title: Test coverage for lib/commands/plan.js + uninstall.js
+    epic: E5
+    status: backlog
+    tags: [tests, coverage]
