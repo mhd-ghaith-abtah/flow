@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `.github/workflows/ci.yml` — GitHub Actions CI on push + PR. Runs `npm test` + `node bin/flow.js plan` for all four profiles on Node 20 and 22, shellchecks `tools/`, and enforces the CHANGELOG-touched rule from CONTRIBUTING.md (fails the PR if shippable files change without a CHANGELOG entry). Closes the second half of #3.
+- `.github/PULL_REQUEST_TEMPLATE.md` — PR checklist matching CONTRIBUTING.md.
+- `schemas/catalog.schema.json`, `schemas/install-state.schema.json`, `schemas/flow-config.schema.json` — JSON Schema (draft-07) for the three hand-editable surfaces. `loadCatalog` runs ajv validation when the schema is present; throws with grouped error messages on violation. New test asserts the shipped `catalog.yaml` passes its own schema. Closes #11.
+- `lib/commands/uninstall.js` — `flow uninstall` removal path. Defaults to `--scope project` (safe; only this project's `.claude/flow/` + `flow.config.yaml`). `--scope home` or `--scope both` for broader removal. Dry-run by default — requires `--execute --yes` to actually remove. Keeps `docs/flow/` (user content) unless `--remove-stories` is passed. Does NOT touch BMad / ECC / Caveman (they're owned by their own installers). Closes #8.
+- `tools/release.sh` — release-cutting script. Sanity-checks (clean tree, on main, up to date), runs tests + smoke, moves `[Unreleased]` block to dated heading, bumps `package.json`, commits + tags + pushes. Supports `patch | minor | major | <explicit-version>` plus `--dry-run` and `--no-push`. Closes #22.
+- Curl-pipe-bash inspection (when `FLOW_INSPECT_INSTALL_SCRIPTS=1`) now prints the downloaded script's SHA-256 alongside path + line count, so users can cross-check against a known-good hash before running. Closes #21.
+- `/flow-doctor` Caveman global-scope probe — detects when Caveman is active outside a Flow project (it activates in every Claude Code session by design upstream) and prints per-project gating recommendations. README FAQ entry documents the workaround until upstream Caveman adds native scope detection. Addresses #9 + #25 to the extent possible without modifying upstream Caveman.
+
+### Added
 - `flow-doctor` skill — health check for catalog / state / adapters / MCPs / CLIs / upstreams + probes for known bugs (caveman-shrink standalone vs wrapper, stripped severity labels, loose `## Plan` markers). Supports `--fix` for safe auto-repairs.
 - `lib/catalog.js` + `lib/commands/plan.js` + `lib/commands/init.js` — first real implementation of `flow plan` and `flow init` (replaces stub dispatch). `flow plan` resolves profiles with `extends:` inheritance and adapter family-override; `--json` emits machine-readable plan.
 - `lib/catalog.test.js` — first test file. 6 tests pass under `npm test` (`node --test`).
@@ -25,6 +34,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Cycle-detection in profile inheritance (`resolveProfile` throws on cycles instead of stack-overflowing).
+- `flow-story` plan phase decision tree restructured. Six lettered paths (A–F) collapsed into four numbered branches, ordered from most-specific (flag-driven) to default. Comments now explicitly state when each branch fires (e.g., "Caveman not installed AND --auto"). Resolves the "unreachable paths E + F when Caveman installed" confusion. Closes #15.
+- `/flow-init --migrate-bmad` now stages backups (`*.flow-backup-<timestamp>`) of `sprint-status.yaml`, `deferred-work.md`, and any pre-existing `docs/flow/sprint.yaml` BEFORE any migration write. Validates produced `sprint.yaml` after write; if parse fails or story count drops to zero, restores from backups and halts with the parse error. Backup paths recorded in `install-state.json.migrations.bmad.backups`. Documented in `docs/migrate-from-bmad.md` was previously aspirational — now implemented. Closes #19.
+- `/flow-init` now records the installed version of every upstream (BMad / ECC / Caveman) at install time in `install-state.json.upstreams.<name>.version`. `flow-doctor` adds a version-drift probe that warns when the currently-installed version differs from the pinned version — catches silent BMad/ECC/Caveman interface changes. Closes #12.
+- `/flow-sprint add` story-id detection now supports `tracker-style` (e.g. `PLA-42`, `ENG-100`), `kebab` (e.g. `setup-auth`), and `custom` formats alongside `bmad` and `flow-native`. Free-form formats prompt for the next id instead of HALTing on "unrecognized format". Closes #26.
+- `/flow-doctor` adapter probe now distinguishes `symlink → <target>`, `regular_file` (mixed-state drift warning), and `missing` for each adapter file. Resolves the previously-undefined behavior when a project mixes real adapter files with Flow's symlinks. Closes #28.
 - Anchored `## Plan` / `## Review Notes` / `## Verified` / `## E2E` marker detection in `flow-story` phase decision. Previous loose match (`grep -c '^## Plan'`) false-matched `## Plan B` or `## Planning`. Now requires exact heading.
 - `flow-doctor` caveman-shrink probe corrected: caveman-shrink is an MCP proxy (not a skill). Probe now reads `claude mcp get caveman-shrink` and flags standalone registrations that cause `-32000` errors. `tools/fix-caveman-shrink.sh` prints the exact remove + re-add commands (does NOT auto-run — MCP registration affects every Claude Code session).
 

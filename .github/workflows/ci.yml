@@ -1,0 +1,90 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Smoke (flow plan)
+        run: |
+          node bin/flow.js plan --profile minimal --json
+          node bin/flow.js plan --profile mini --json
+          node bin/flow.js plan --profile standard --json
+          node bin/flow.js plan --profile team --json
+
+      - name: Smoke (flow help + version)
+        run: |
+          node bin/flow.js --version
+          node bin/flow.js help > /dev/null
+
+      - name: Reject unknown profile
+        run: |
+          set +e
+          node bin/flow.js plan --profile bogus
+          rc=$?
+          if [ $rc -eq 0 ]; then
+            echo "Expected non-zero exit for bogus profile, got 0"
+            exit 1
+          fi
+
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: ShellCheck tools/
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: tools
+
+  changelog:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify CHANGELOG.md updated when shippable files change
+        run: |
+          set -e
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+          CHANGED=$(git diff --name-only "$BASE" "$HEAD")
+          echo "Changed files:"
+          echo "$CHANGED"
+
+          # Require CHANGELOG.md to be touched if any shippable area changed.
+          if echo "$CHANGED" | grep -qE '^(lib/|bin/|skills/|adapters/|templates/|catalog\.yaml|package\.json)'; then
+            if ! echo "$CHANGED" | grep -qE '^CHANGELOG\.md$'; then
+              echo ""
+              echo "::error::Shippable files changed but CHANGELOG.md was not touched."
+              echo "Add an entry under '## [Unreleased]' (see CONTRIBUTING.md)."
+              exit 1
+            fi
+            echo "CHANGELOG.md updated alongside shippable changes — good."
+          else
+            echo "No shippable files changed; CHANGELOG.md not required."
+          fi

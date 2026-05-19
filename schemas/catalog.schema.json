@@ -1,0 +1,155 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/mhd-ghaith-abtah/flow/schemas/catalog.schema.json",
+  "title": "Flow catalog",
+  "description": "The single source of truth for what Flow can install. Validated on every install.",
+  "type": "object",
+  "required": ["version", "flow_components", "adapters", "profiles"],
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "flow_version_compat": { "type": "string" },
+
+    "flow_components": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/flow_component" }
+    },
+
+    "adapters": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/adapter" }
+    },
+
+    "mcps": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/mcp" }
+    },
+
+    "upstreams": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/definitions/upstream" }
+    },
+
+    "profiles": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": { "$ref": "#/definitions/profile" }
+    }
+  },
+  "additionalProperties": false,
+
+  "definitions": {
+    "flow_component": {
+      "type": "object",
+      "required": ["id", "family"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9-]+:[a-z0-9-]+$" },
+        "family": { "type": "string", "enum": ["core", "adapter", "mcp"] },
+        "description": { "type": "string" },
+        "required": { "type": "boolean" },
+        "operations": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/operation" }
+        }
+      },
+      "additionalProperties": true
+    },
+
+    "adapter": {
+      "type": "object",
+      "required": ["id", "family"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^adapter:[a-z0-9-]+$" },
+        "family": {
+          "type": "string",
+          "enum": ["issue-tracker", "pr", "e2e", "verify", "notification"]
+        },
+        "description": { "type": "string" },
+        "needs_mcp": { "type": "array", "items": { "type": "string" } },
+        "needs_cli": { "type": "array", "items": { "type": "string" } },
+        "detect": { "type": "string" },
+        "config_keys": { "type": "array" },
+        "runtime_deps": { "type": "array" },
+        "operations": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/operation" }
+        }
+      },
+      "additionalProperties": true
+    },
+
+    "mcp": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "package": { "type": "string" },
+        "install_cmd": { "type": "string" },
+        "detect_cmd": { "type": "string" },
+        "scope_default": { "type": "string", "enum": ["home", "project"] },
+        "auth": {
+          "type": "string",
+          "enum": ["none", "api_token", "oauth_browser", "oauth_device"]
+        },
+        "auth_instructions": { "type": "string" },
+        "env": { "type": "array" },
+        "optional": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    },
+
+    "upstream": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "repo": { "type": "string" },
+        "homepage": { "type": "string" },
+        "description": { "type": "string" },
+        "detect": { "type": "object" },
+        "installer": { "type": "object" },
+        "available_modules": { "type": "array" },
+        "available_profiles": { "type": "array" },
+        "available_modes": { "type": "array" },
+        "curated_subsets": { "type": "object" }
+      },
+      "additionalProperties": true
+    },
+
+    "profile": {
+      "type": "object",
+      "required": ["description"],
+      "properties": {
+        "description": { "type": "string" },
+        "extends": { "type": "string" },
+        "flow_components": { "type": "array", "items": { "type": "string" } },
+        "adapters": { "type": "array", "items": { "type": "string" } },
+        "mcps": { "type": "array", "items": { "type": "string" } },
+        "bmad_subset": { "type": "string" },
+        "ecc_subset": { "type": "string" },
+        "caveman_subset": { "type": "string" },
+        "features": { "type": "object" }
+      },
+      "additionalProperties": false
+    },
+
+    "operation": {
+      "type": "object",
+      "properties": {
+        "copy": {
+          "type": "object",
+          "required": ["from", "to"],
+          "properties": {
+            "from": { "type": "string" },
+            "to": { "type": "string" }
+          }
+        },
+        "ensure_dir": { "type": "string" },
+        "touch": { "type": "string" },
+        "run": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

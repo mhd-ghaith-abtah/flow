@@ -35,7 +35,10 @@
 <step n="4" goal="Adapter wiring">
   <action>For each adapter referenced in `flow.config.yaml.adapters` (one per family: issue-tracker, pr, e2e, verify):
     - Verify the adapter file exists at `{{repo_root}}/adapters/<family>/<adapter-id>.md` → `adapter.<family>.file`
-    - Verify any project-side symlink in `.claude/flow/adapters/` resolves → `adapter.<family>.symlink`
+    - Probe `.claude/flow/adapters/<family>.md` or `.claude/flow/adapters/<family>/<adapter-id>.md` (depending on layout):
+      - If it's a symlink → resolve target. Record `adapter.<family>.kind: symlink → <target>`. If target doesn't exist, record `⚠ broken symlink`.
+      - If it's a regular file → record `adapter.<family>.kind: regular_file`. Issue #28: this is the **mixed state** — Flow expects symlinks (so updating the upstream `adapters/<family>/*.md` propagates automatically), but a regular file means someone edited the project-side copy directly. Record `bug.adapter_symlink_drift: ⚠ <family> is a regular file, will not pick up upstream adapter updates` and suggest `flow adapter swap <family> <id>` (forces re-symlink) or accept the divergence intentionally.
+      - If neither exists → record `⚠ adapter file missing` (suggest `flow-init --repair`).
   </action>
 </step>
 
@@ -75,6 +78,18 @@
 
   <action>**Plan/Verified/Review-Notes loose-match probe** (issue #10):
     - For each story in `docs/flow/stories/*.md`, run `grep -c '^## Plan$'` (anchored, exact). Compare to `grep -c '^## Plan'` (loose). If counts differ, record `bug.plan_marker_loose: ⚠ <story-id>`.
+  </action>
+
+  <action>**Upstream version-drift probe** (issue #12):
+    - For each upstream (bmad, ecc, caveman): read recorded `version` from `home_state.upstreams.<name>.version`. If absent, record `drift.<name>: ℹ not pinned (install pre-dates pinning)`.
+    - Read currently-installed version (same resolution chain as `/flow-init`: BMad → `_bmad/_config/manifest.yaml`; ECC → `~/.claude/rules/VERSION`; Caveman → `~/.claude/plugins/cache/caveman/caveman/*/package.json`).
+    - If recorded ≠ current AND neither is `unknown@*`, record `drift.<name>: ⚠ pinned <recorded>, installed <current>`. Suggest: `flow-init --update --pin-upstream <name>` to re-pin, or `flow-init --repair --upstream <name>` to reinstall the pinned version.
+  </action>
+
+  <action>**Caveman global-scope probe** (issue #9 + #25):
+    - Caveman's `SessionStart` hook (`~/.claude/hooks/caveman-activate.js`) runs in every Claude Code session, including non-Flow projects. This is by design upstream but can surprise users who only wanted Caveman in Flow projects.
+    - Probe: detect whether the current CWD has `flow.config.yaml`. If NOT (we're outside a Flow project) AND `test -f ~/.claude/.caveman-active` (Caveman is active here), record `info.caveman_global_scope: ℹ Caveman active outside a Flow project (this is upstream default)`.
+    - Suggest in the report: to gate Caveman per-project, either (a) set Caveman's default mode to `off` via `~/.claude/.caveman-mode = off`, then add a per-project `~/.claude/hooks/caveman-config.local.js` that flips it to `full` when `flow.config.yaml` is detected, or (b) file an upstream request with the Caveman project for native project-scope detection. Don't auto-fix — modifying Caveman's hooks affects every session.
   </action>
 </step>
 

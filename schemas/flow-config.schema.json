@@ -1,0 +1,85 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/mhd-ghaith-abtah/flow/schemas/flow-config.schema.json",
+  "title": "Flow project config",
+  "description": "Per-project configuration written by /flow-init. Intended to be committed (team-share). Per-developer overrides go in flow.config.local.yaml (gitignored, deep-merged on top).",
+  "type": "object",
+  "required": ["version", "mode", "adapters"],
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "generated": { "type": "string" },
+    "flow_version": { "type": "string" },
+    "mode": { "type": "string", "enum": ["minimal", "mini", "standard", "team"] },
+
+    "sprint_file": { "type": "string" },
+    "stories_dir": { "type": "string" },
+    "journeys_dir": { "type": "string" },
+    "retros_dir": { "type": "string" },
+    "archive_dir": { "type": "string" },
+    "deferred_file": { "type": "string" },
+    "artifacts_dir": { "type": "string" },
+
+    "adapters": {
+      "type": "object",
+      "required": ["issue_tracker", "pr", "e2e", "verify"],
+      "properties": {
+        "issue_tracker": { "type": "string" },
+        "pr": { "type": "string" },
+        "e2e": { "type": "string" },
+        "verify": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+
+    "integrations": {
+      "type": "object",
+      "additionalProperties": true
+    },
+
+    "review": {
+      "type": "object",
+      "properties": {
+        "use_separate_model": { "type": "boolean" },
+        "auto_hard_review_tags": { "type": "array", "items": { "type": "string" } },
+        "language_reviewer": { "type": ["string", "null"] },
+        "barrier_timeout_seconds": { "type": "integer", "minimum": 60, "maximum": 7200 }
+      },
+      "additionalProperties": false
+    },
+
+    "implement": {
+      "type": "object",
+      "properties": {
+        "default": { "type": "string" },
+        "use_tdd": { "type": "boolean" },
+        "e2e_auto_trigger_tags": { "type": "array", "items": { "type": "string" } },
+        "docs_auto_trigger": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    },
+
+    "pr": {
+      "type": "object",
+      "properties": {
+        "auto_merge_wait_seconds": { "type": "integer", "minimum": 5, "maximum": 600 }
+      },
+      "additionalProperties": true
+    },
+
+    "secrets": {
+      "type": "object",
+      "properties": {
+        "store": { "type": "string", "enum": ["env_file", "shell", "onepassword"] }
+      },
+      "additionalProperties": true
+    },
+
+    "reference_docs": { "type": "array", "items": { "type": "string" } },
+
+    "upstreams": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

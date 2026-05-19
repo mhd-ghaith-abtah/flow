@@ -186,7 +186,8 @@
       <output>⚠ BMad installer exited {{code}}. See output above. You can continue without BMad and re-run later.</output>
       <ask>Continue Flow install? [Y/n]</ask>
     </check>
-    <action>Record in `{{home_state}}.upstreams.bmad`: { subset, modules, exit_code, ran_at }</action>
+    <action>**Pin upstream version** (issue #12). After install: read the version from the first existing path in `catalog.upstreams.bmad.detect.version_path_candidates` (typically `_bmad/_config/manifest.yaml` → `version` field). If unparseable, store the literal commit hash from `git -C _bmad rev-parse HEAD 2>/dev/null`; if neither available, store `"unknown@{{date}}"` so doctor can still detect drift.</action>
+    <action>Record in `{{home_state}}.upstreams.bmad`: { subset, modules, exit_code, ran_at, version: <pinned-version> }</action>
   </check>
 </step>
 
@@ -194,7 +195,8 @@
   <check if="{{plan.ecc_subset}} != none">
     <action>Resolve `{{ecc_installer_path}}` from catalog.upstreams.ecc.detect.installer_path_candidates. If none found, fall back to `npx @everything-claude-code/ecc install`.</action>
     <action>Run `{{ecc_cmd}}` via execa (stream live). Capture exit code.</action>
-    <action>Record in `{{home_state}}.upstreams.ecc`.</action>
+    <action>**Pin upstream version** (issue #12). After install: read `~/.claude/rules/VERSION` (path from `catalog.upstreams.ecc.detect.version_path`). If absent, fall back to `git -C ~/.claude/rules log -1 --format=%H 2>/dev/null` or `"unknown@{{date}}"`.</action>
+    <action>Record in `{{home_state}}.upstreams.ecc`: { subset, profile, exit_code, ran_at, version: <pinned-version> }</action>
   </check>
 </step>
 
@@ -204,7 +206,8 @@
 
     <check if="{{caveman_present}} == true">
       <output>✓ Caveman already installed — leaving in place.</output>
-      <action>Record in `{{home_state}}.upstreams.caveman`: { subset, mode, installed: pre-existing, ran_at }.</action>
+      <action>**Pin upstream version** (issue #12). Read Caveman's installed version: try `cat ~/.claude/plugins/cache/caveman/caveman/*/package.json | jq -r .version 2>/dev/null` then `cat ~/.claude/skills/caveman/SKILL.md | grep -oE 'version: [0-9.]+' | head -1` then fall back to `"unknown@{{date}}"`.</action>
+      <action>Record in `{{home_state}}.upstreams.caveman`: { subset, mode, installed: pre-existing, ran_at, version: <pinned-version> }.</action>
     </check>
 
     <check if="{{caveman_present}} == false">
@@ -217,7 +220,14 @@
       </output>
 
       <check if="$FLOW_INSPECT_INSTALL_SCRIPTS == 1">
-        <action>Download the script to `/tmp/caveman-install.sh` first. Show the user the file path and a `wc -l` count. Ask "Inspect? [Y/n]" — if Y, print the file. Then ask "Run? [Y/n]".</action>
+        <action>Download the script to `/tmp/caveman-install.sh` first. Compute + print:
+          - File path
+          - `wc -l` count
+          - SHA-256: `shasum -a 256 /tmp/caveman-install.sh | cut -d' ' -f1`
+
+          This lets the user cross-check the hash against a known-good value before running.
+          Ask "Inspect? [Y/n]" — if Y, print the file. Then ask "Run? [Y/n]".
+        </action>
       </check>
       <check if="$FLOW_INSPECT_INSTALL_SCRIPTS != 1 AND NOT --yes">
         <ask>Run the curl-pipe-bash install? [Y/n/inspect]</ask>
@@ -231,7 +241,8 @@
 
       <action>Set Caveman mode to `{{plan.caveman_mode}}` (from the chosen subset). Caveman's install script may handle this; if not, document the post-install command the user should run (e.g. `/caveman full`).</action>
 
-      <action>Record in `{{home_state}}.upstreams.caveman`: { subset, mode, installed_at, source: "curl-pipe-bash", repo, exit_code }.</action>
+      <action>**Pin upstream version** (issue #12). Read Caveman's installed version (same resolution chain as the pre-existing branch above). If install was successful but version can't be read, store `"installed-{{date}}"`.</action>
+      <action>Record in `{{home_state}}.upstreams.caveman`: { subset, mode, installed_at, source: "curl-pipe-bash", repo, exit_code, version: <pinned-version> }.</action>
     </check>
   </check>
 
@@ -280,6 +291,16 @@
 
 <step n="11" goal="Migrate BMad state if user opted in (Q8)">
   <check if="user answered yes to Q8">
+    <!-- Backup + rollback (issue #19). Stage backups before ANY write so the
+         user can restore if the migration produces a malformed sprint.yaml. -->
+    <action>**Backup before migration.** Set `{{backup_ts}}` = `date -u +%Y%m%dT%H%M%SZ`. Copy:
+      - `docs/_bmad-output/implementation-artifacts/sprint-status.yaml` → `docs/_bmad-output/implementation-artifacts/sprint-status.yaml.flow-backup-{{backup_ts}}`
+      - `docs/_bmad-output/implementation-artifacts/deferred-work.md` → `…/deferred-work.md.flow-backup-{{backup_ts}}` (if present)
+      - Any pre-existing `docs/flow/sprint.yaml` → `docs/flow/sprint.yaml.flow-backup-{{backup_ts}}` (if Flow is re-migrating into a non-empty target)
+
+      Record the backup paths in `{{project_state}}.migrations.bmad.backups = [<path>, …]`. If any copy fails, HALT — do NOT proceed with the migration.
+    </action>
+
     <action>Read `docs/_bmad-output/implementation-artifacts/sprint-status.yaml`. For each story key matching `e\d+-s\d+-...`:
       - Parse epic + story number + title
       - Map BMad status → Flow status (backlog→backlog, ready-for-dev→backlog, in-progress→doing, review→review, done→done)
@@ -287,13 +308,27 @@
       - Generate `docs/flow/stories/E{N}-S{M}-{title}.md` stub using `{{repo_root}}/templates/story.md.tmpl`, prefilling title + epic + sprint-status
     </action>
 
+    <action>**Validate the produced sprint.yaml.** Parse it; if the parse fails OR the produced file has zero stories when the source had non-zero, treat the migration as failed → restore each backed-up file from its `.flow-backup-{{backup_ts}}` snapshot, delete the produced files, and HALT with the parse error. The user can fix sprint-status.yaml and re-run `flow-init --update --migrate-bmad`.</action>
+
     <action>Read `docs/_bmad-output/implementation-artifacts/deferred-work.md`. For each non-folded entry, append a one-line summary to `docs/flow/deferred.md`.</action>
 
     <action>**Do NOT rename or remove `_bmad/`.** Leave it in place so BMad slash commands keep working in this project (the global `bmad-*` skills resolve `_bmad/scripts/...` paths relative to project root). Flow ignores it. The user can archive manually later via `mv _bmad _bmad.archived` once they're sure they're done with BMad in this project, or run `flow uninstall --archive-bmad` in v0.2+.</action>
 
     <action>Keep `docs/_bmad-output/planning-artifacts/` in place as reference docs (Flow's `flow.config.yaml > reference_docs` points at it).</action>
 
-    <action>Record migration in `{{project_state}}.migrations.bmad`: { from_version, stories_imported, deferred_imported, bmad_kept_in_place: true }</action>
+    <action>Record migration in `{{project_state}}.migrations.bmad`: { from_version, stories_imported, deferred_imported, bmad_kept_in_place: true, backups: [<paths>], backup_ts: {{backup_ts}} }</action>
+
+    <output>✓ Migration complete.
+
+    Backups staged at `*.flow-backup-{{backup_ts}}` next to the original BMad files. To roll back:
+
+      rm -rf docs/flow/
+      git checkout flow.config.yaml      # if it was new
+      mv docs/_bmad-output/implementation-artifacts/sprint-status.yaml.flow-backup-{{backup_ts}} \
+         docs/_bmad-output/implementation-artifacts/sprint-status.yaml
+
+    Or run `flow uninstall --restore-backup {{backup_ts}}` once that command lands in v0.2.
+    </output>
   </check>
 </step>
 

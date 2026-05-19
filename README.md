@@ -119,6 +119,9 @@ ECC owns the per-story primitives (`/plan`, `/prp-implement`, `/code-review`, `/
 **Do I need Caveman?**
 Yes for now — Flow expects it. Caveman compresses Claude's responses ~75% in `full` mode, which is what makes mini-profile's 20k-tokens-per-story claim realistic. `/flow-init` installs it automatically with the right registration (see `tools/fix-caveman-shrink.sh` if the MCP proxy gets mis-registered).
 
+**Caveman is now active in every Claude Code session, even my non-Flow projects. Can I scope it?**
+Caveman's `SessionStart` hook activates globally by design upstream. To gate it per-project, either (a) set Caveman's default mode to `off` (`echo off > ~/.claude/.caveman-mode`), then add a per-project hook that flips it to `full` when `flow.config.yaml` is detected, or (b) file an upstream request with the [Caveman project](https://github.com/JuliusBrussee/caveman) for native project-scope detection. `/flow-doctor` flags this when it sees Caveman active outside a Flow project.
+
 **Which profile should I pick?**
 - `mini` — solo, single repo, light review, no formal PR process → ~20k/story
 - `standard` — solo or small team, formal review, GitHub PRs, Playwright E2E → ~40k/story

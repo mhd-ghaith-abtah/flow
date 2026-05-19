@@ -68,18 +68,23 @@
       <ask>Acceptance criteria? One per line. Empty line to finish.</ask>
     </check>
 
-    <action>Compute the next story id for this epic — **detect format from existing stories first**:
+    <action>Compute the next story id for this epic — **detect format from existing stories first** (issue #26 — loosened to support non-BMad/non-Flow formats):
       1. Collect existing stories in this epic: `{{epic_stories}}` = stories where `epic == {{epic_id}}`.
-      2. Determine `{{id_format}}`:
-         - If `{{epic_stories}}` is non-empty: inspect the FIRST entry's id.
-           - Matches `^E\d+-S\d+[a-z]?$` → format = `bmad` (e.g. `E1-S1`).
-           - Matches `^E\d+-\d{3}$`        → format = `flow-native` (e.g. `E1-001`).
-           - Anything else                  → HALT with "Unrecognized story-id format in epic {{epic_id}}: {{first.id}}. Fix sprint.yaml or pass --id-format=flow-native|bmad."
-         - If `{{epic_stories}}` is empty: use `flow.config.yaml > sprint.default_id_format` (default `bmad` post-migration, `flow-native` for greenfield projects).
-      3. Compute next numeric: `{{next_num}}` = max(parsed numeric part of each existing id) + 1; start at 1 for empty epics.
+      2. Determine `{{id_format}}` by matching the FIRST entry's id against the regex set in priority order:
+         - `^E\d+-S\d+[a-z]?$`     → `bmad` (e.g. `E1-S1`, `E3-S9b`)
+         - `^E\d+-\d{3}$`          → `flow-native` (e.g. `E1-001`)
+         - `^[A-Z][A-Z0-9]*-\d+$`  → `tracker-style` (e.g. `PLA-42`, `ENG-100` — Linear / Jira style)
+         - `^[a-z][a-z0-9-]*$`     → `kebab` (e.g. `setup-auth`, `migrate-db-v2`)
+         - `^.+$` (any non-empty)  → `custom` — Flow won't auto-generate; ASKs the user for the next id (suggests `<FIRST.id>_<n>`)
+         - Empty                    → HALT with "Empty story-id in epic {{epic_id}}. Fix sprint.yaml manually."
+         - If `{{epic_stories}}` is empty: use `flow.config.yaml > sprint.default_id_format` (default `bmad` post-migration, `flow-native` for greenfield, override via `--id-format=<format>`).
+      3. Compute next numeric: `{{next_num}}` = max(parsed numeric part of each existing id) + 1; start at 1 for empty epics. `kebab` + `custom` skip this.
       4. Render `{{story_id}}` per format:
-         - `bmad`         → `E{{epic_num}}-S{{next_num}}` (no zero-padding; e.g. `E1-S11`)
-         - `flow-native`  → `E{{epic_num}}-{{next_num.toString().padStart(3, '0')}}` (e.g. `E1-011`)
+         - `bmad`           → `E{{epic_num}}-S{{next_num}}` (no zero-padding; e.g. `E1-S11`)
+         - `flow-native`    → `E{{epic_num}}-{{next_num.toString().padStart(3, '0')}}` (e.g. `E1-011`)
+         - `tracker-style`  → `{{prefix}}-{{next_num}}` (prefix parsed from FIRST.id; reuses tracker team-key)
+         - `kebab`          → ASK user (no sensible auto-form for free-form kebab ids; suggest `--id=<value>` flag)
+         - `custom`         → ASK user; default suggestion `{{FIRST.id}}_{{next_num}}`
     </action>
 
     <action>Generate filename: `{{stories_dir}}/{{story_id}}-{{slug(title)}}.md`.</action>

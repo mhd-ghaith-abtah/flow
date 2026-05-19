@@ -27,7 +27,7 @@ node bin/flow.js plan --profile standard   # smoke
 
 Use Keep-a-Changelog sections in this order: `### Added`, `### Changed`, `### Fixed`, `### Removed`. One-line entries; reference issue numbers from the handoff list (`#4`, `#16`, etc.) when applicable.
 
-CI will fail your PR if it touches `lib/`, `bin/`, `skills/`, `catalog.yaml`, `templates/`, or `adapters/` without bumping CHANGELOG. (Hook is in `.github/workflows/changelog.yml` — to be added in v0.7.)
+CI will fail your PR if it touches `lib/`, `bin/`, `skills/`, `adapters/`, `templates/`, `catalog.yaml`, or `package.json` without updating `CHANGELOG.md`. The check is the `changelog` job in `.github/workflows/ci.yml`.
 
 ## Versioning
 

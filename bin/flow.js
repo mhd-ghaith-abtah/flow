@@ -91,13 +91,13 @@ async function main() {
     return 1;
   }
 
-  // Parse remaining args
+  // Parse remaining args. Note: no global `scope` default — each command sets
+  // its own (install: both; uninstall: project, for safety).
   const args = yargsParser(argv.slice(1), {
     string: ['profile', 'bmad-subset', 'ecc-subset', 'with', 'without', 'scope', 'catalog-source', 'mcp', 'family'],
-    boolean: ['dry-run', 'json', 'yes', 'archive-unused', 'migrate-bmad'],
+    boolean: ['dry-run', 'json', 'yes', 'execute', 'remove-stories', 'remove-backups', 'archive-unused', 'migrate-bmad'],
     array: ['with', 'without'],
-    alias: { y: 'yes' },
-    default: { scope: 'both' }
+    alias: { y: 'yes' }
   });
 
   // Dispatch — each command module exports a default async function(args, ctx)

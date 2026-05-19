@@ -146,14 +146,11 @@ If Caveman is NOT installed (subset == none), fall back to the inline behavior d
 
   <!-- ────────────────────── PLAN ────────────────────── -->
   <check if="phase == 'plan'">
-    <!-- v0.6.1 default flip: cavecrew is now the DEFAULT planner when Caveman
-         is installed. ECC /plan only runs under --strict-plan. cavecrew has no
-         CONFIRM gate, returns Caveman-shape Plan, faster for repetitive work.
-         The CONFIRM ritual is still available for high-risk stories via flag. -->
+    <!-- Plan-phase decision tree. First match wins. The branches are mutually
+         exclusive and ordered from most-specific (flag-driven) to default.
+         (--advise-only is handled at the top of step 3; never reaches here.) -->
 
-    <!-- Path A: --advise-only (read-only) handled at top of step 3 already -->
-
-    <!-- Path B: --skip-plan — write minimal placeholder, no agent, no /plan -->
+    <!-- 1. --skip-plan: trivial / clone-of-sibling. Placeholder only. -->
     <check if="--skip-plan">
       <output>📐 plan → placeholder (--skip-plan). prp-implement plans inline.</output>
       <action>Append a `## Plan` section to {{story_file}}:
@@ -166,27 +163,29 @@ If Caveman is NOT installed (subset == none), fall back to the inline behavior d
       <action>Re-detect phase. Continue. Do NOT end turn.</action>
     </check>
 
-    <!-- Path C: --strict-plan — invoke ECC /plan with CONFIRM gate, even under --auto -->
+    <!-- 2. --strict-plan: high-risk story; force ECC /plan with CONFIRM gate. -->
     <check if="--strict-plan">
       <output>📐 plan → /plan (strict, CONFIRM gate enforced)…</output>
       <action>Invoke `plan` skill via Skill tool with argument `@{{story_file}}`. Wait for /plan's CONFIRM gate. After /plan returns successfully: re-detect, continue. Do NOT end turn.</action>
     </check>
 
-    <!-- Path D: Caveman installed AND cavecrew available → DEFAULT (covers --auto and bare /flow-story) -->
+    <!-- 3. Caveman installed → cavecrew is the default planner.
+         Covers bare /flow-story and --auto. No CONFIRM gate, Caveman-shape output. -->
     <check if="Caveman installed AND `caveman:cavecrew` skill registered">
-      <output>📐 plan → cavecrew (caveman default, no CONFIRM gate)…</output>
+      <output>📐 plan → cavecrew (Caveman default, no CONFIRM gate)…</output>
       <action>Spawn `caveman:cavecrew` (or fall back to `cavecrew` flat name) as Agent with `run_in_background: true`. Prompt: "Emit Plan section for {{story.id}} — {{story.title}}. Inputs: story file at {{story_file}}, sibling pattern {{sibling.id}} ({{sibling.file}}), refs above. Output only the Plan markdown body (no preamble). Caveman style: fragments OK, drop filler." When agent returns, append its output as the `## Plan` section in {{story_file}}.</action>
       <action>Re-detect phase. Continue. Do NOT end turn.</action>
     </check>
 
-    <!-- Path E: Caveman NOT installed AND no --auto/--strict-plan → fall back to ECC /plan -->
+    <!-- 4. Caveman not installed. Two sub-cases:
+         4a. --auto → placeholder (consistent with cavecrew's no-gate behavior)
+         4b. bare /flow-story → ECC /plan with CONFIRM gate -->
     <check if="--auto">
-      <output>📐 plan → placeholder (--auto, no Caveman cavecrew). prp-implement plans inline.</output>
-      <action>Append a `## Plan` section to {{story_file}} as in Path B (placeholder). Re-detect, continue.</action>
+      <output>📐 plan → placeholder (--auto, no Caveman). prp-implement plans inline.</output>
+      <action>Append a `## Plan` section to {{story_file}} as in branch 1 (placeholder). Re-detect, continue.</action>
     </check>
 
-    <!-- Path F: bare /flow-story, no Caveman → original ECC /plan path with CONFIRM gate -->
-    <output>📐 plan → invoking `plan` skill on {{story_file}}… (pass `--auto` to skip the CONFIRM gate, or install Caveman for cavecrew default)</output>
+    <output>📐 plan → /plan with CONFIRM gate (pass `--auto` to skip, or install Caveman for cavecrew default)…</output>
     <action>Invoke the `plan` skill via the Skill tool with argument `@{{story_file}}`. The plan skill will (a) read the story, (b) propose an implementation strategy, (c) ASK the user to CONFIRM before continuing. That confirmation gate is plan's own, not flow-story's — flow-story waits for it to return.</action>
     <action>After /plan returns successfully (story file now has a populated `## Plan` section): re-detect phase from Step 2 and continue. Do NOT end turn.</action>
   </check>

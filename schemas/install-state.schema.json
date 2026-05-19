@@ -1,0 +1,79 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/mhd-ghaith-abtah/flow/schemas/install-state.schema.json",
+  "title": "Flow install state",
+  "description": "Records what Flow installed at a given scope (home or project). Used for diffing on /flow-init --update and for /flow-doctor checks.",
+  "type": "object",
+  "required": ["schema_version"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^flow\\.install\\.v[0-9]+$"
+    },
+    "scope": { "type": "string", "enum": ["home", "project"] },
+    "installed_at": { "type": "string", "format": "date-time" },
+    "updated_at": { "type": "string", "format": "date-time" },
+    "flow_version": { "type": "string" },
+    "profile": { "type": "string" },
+    "components": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": { "type": "string" },
+          "installed_at": { "type": "string", "format": "date-time" },
+          "paths": { "type": "array", "items": { "type": "string" } }
+        },
+        "additionalProperties": true
+      }
+    },
+    "adapters": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "installed_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "mcps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": { "type": "string" },
+          "registered_at": { "type": "string", "format": "date-time" },
+          "scope": { "type": "string", "enum": ["home", "project"] },
+          "auth_pending": { "type": "boolean" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "upstreams": {
+      "type": "object",
+      "properties": {
+        "bmad": { "$ref": "#/definitions/upstream_record" },
+        "ecc":  { "$ref": "#/definitions/upstream_record" },
+        "caveman": { "$ref": "#/definitions/upstream_record" }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true,
+
+  "definitions": {
+    "upstream_record": {
+      "type": "object",
+      "properties": {
+        "installed": { "type": "boolean" },
+        "subset": { "type": "string" },
+        "version": { "type": "string" },
+        "installed_at": { "type": "string", "format": "date-time" }
+      },
+      "additionalProperties": true
+    }
+  }
+}
