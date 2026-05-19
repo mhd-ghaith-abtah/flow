@@ -51,9 +51,11 @@ Extends `standard`. Adds:
 - **Adapters:** overrides `issue-tracker-github-issues` → `issue-tracker-linear`
 - **MCPs:** + `linear`
 - **BMad subset:** `full`
-- **Features:** `multi_repo: true`, `multi_llm_review: true`, `audit_log: true`
+- **Review:** `use_separate_model: true` — spawns one reviewer with a different model (e.g., Sonnet alongside Opus) for cross-model perspective on tagged-risky stories
 
-What you get: Linear-driven sprint sync, sibling PRs across multiple repos for cross-cutting stories, multi-LLM adversarial review (spawn one reviewer with a different model for fresh perspective), audit log of every adapter call.
+What you get: full orchestration + Linear-driven sprint sync + cross-model code review on high-risk stories.
+
+> **What you don't get (despite earlier docs promising it):** multi-repo coordinated sibling PRs and per-adapter-call audit logs. Those were aspirational features in the team-profile description through v0.7.0 with zero implementation behind them. Stripped on 2026-05-19 (sprint story E5-007). Read-only multi-repo awareness (story-id touches N repos → aggregate PR status) is tracked as a deferred backlog item; surface a real use case and we'll design it properly.
 
 ## Swapping profiles
 

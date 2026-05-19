@@ -348,7 +348,7 @@ profiles:
     caveman_subset: full
 
   team:
-    description: "Multi-repo, team, issue tracker (Linear default), sibling PRs"
+    description: "Small team, Linear-driven sprints, separate-model code review for fresh perspective"
     extends: standard
     adapters:
       - adapter:issue-tracker-linear  # overrides github-issues from mini
@@ -356,7 +356,9 @@ profiles:
     bmad_subset: full
     ecc_subset: flow-essentials-plus-tdd
     caveman_subset: full
-    features:
-      multi_repo: true
-      multi_llm_review: true
-      audit_log: true
+    # Note: review.use_separate_model is set to true in the generated
+    # flow.config.yaml for this profile (spawns one reviewer with a different
+    # model for fresh perspective). The previous `features` block here
+    # advertised multi_repo + audit_log + multi_llm_review — multi_repo and
+    # audit_log had zero implementation (E5-007 strip 2026-05-19), and
+    # multi_llm_review was a renamed duplicate of use_separate_model.

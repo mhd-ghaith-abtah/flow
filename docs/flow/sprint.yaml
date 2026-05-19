@@ -433,11 +433,44 @@ stories:
   - id: E5-007
     title: Multi-repo support for team profile
     epic: E5
-    status: wontfix-until-demand
-    tags: [multi-repo, team-profile]
+    status: done
+    closed_via: strip-false-promise
+    closed_in: post-v0.7-batch
+    tags: [multi-repo, team-profile, marketing-cleanup]
     added_via: scope-review-2026-05-19
     promoted_from: deferred.md
-    notes: "Catalog advertises features.multi_repo: true for team profile but no impl. Defer until first multi-repo user surfaces an actual need. The phantom feature flag is the bug, not the missing impl."
+    notes: |
+      Self-doubt round on the implementation sketch surfaced 8 design problems
+      (sibling-PR enforcement is convention not enforcement, all-or-none merge
+      can't roll back past merged PRs, workspace_root assumes flat layout,
+      per-repo verify adapters mean config schema explosion, etc.) and a
+      strategic problem: orchestration-style multi-repo competes with Bors /
+      Mergify and the industry answer is monorepo migration. Stripped the
+      false marketing from catalog.yaml + README + docs/profiles.md instead.
+      Also stripped audit_log (zero implementation) and multi_llm_review
+      (renamed duplicate of review.use_separate_model). E5-010 deferred for
+      read-only awareness if real demand surfaces.
+
+  - id: E5-010
+    title: Read-only multi-repo awareness (deferred)
+    epic: E5
+    status: deferred
+    tags: [multi-repo, awareness, dx]
+    added_via: e5-007-strip-2026-05-19
+    notes: |
+      The 80% multi-repo need is awareness, not orchestration: a story
+      declares "touches repos A, B, C", /flow-sprint status aggregates PR
+      state across all three via `gh pr list`, /flow-sprint done waits for
+      all three to merge. Zero changes to flow-story. Zero new adapter ops.
+      ~2 days of work.
+
+      Build this when a specific user surfaces with a concrete use case.
+      Until then, keep it deferred (not wontfix — deferred means we'd build
+      it on demand; wontfix would mean we'd refuse).
+
+      Out of scope here: coordinated atomic merges, sibling-PR enforcement,
+      merge-policy rollback semantics. Those are Bors-class problems, not
+      Flow problems.
 
   - id: E5-008
     title: Smoke-test all four profiles in CI (.github/workflows/ci.yml)

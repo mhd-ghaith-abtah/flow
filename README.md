@@ -58,7 +58,7 @@ $ /flow-sprint done E1-001                                # close out
 |---|---|---|
 | `mini` | Solo, single repo, light review | ~20k |
 | `standard` | Solo or small team, formal review, PRs | ~40k |
-| `team` | Multi-repo, issue tracker, sibling PRs | ~60k |
+| `team` | Small team, Linear sprints, separate-model review | ~60k |
 
 All three are mode flags on the same skills, not different code paths.
 
@@ -129,7 +129,7 @@ Caveman's `SessionStart` hook activates globally by default. Native project-scop
 **Which profile should I pick?**
 - `mini` — solo, single repo, light review, no formal PR process → ~20k/story
 - `standard` — solo or small team, formal review, GitHub PRs, Playwright E2E → ~40k/story
-- `team` — multi-repo, issue tracker (Linear default), sibling PRs, multi-LLM review → ~60k/story
+- `team` — small team, issue tracker (Linear default), separate-model code review (spawns one reviewer with a different model for fresh perspective) → ~60k/story
 
 You can swap profiles with `/flow-init --update --profile <name>` — it's just a different bundle, not a different codepath.
 
