@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `/flow-init` now drops a `.caveman-enable` zero-byte marker in the project root. Pairs with the upstream Caveman PR ([JuliusBrussee/caveman#407](https://github.com/JuliusBrussee/caveman/pull/407)) that adds project-scope gating via `.caveman-enable` / `.caveman-disable` markers + env var + config allow/deny lists. Flow's own repo carries the marker so contributors keep Caveman active here even with global default flipped to off. Fully closes #9 + #25 once the upstream PR merges.
+- `tools/release.sh` migrated mature features now exercised end-to-end via the v0.7.0 cut. No code change — listing for traceability.
+
+### Changed
+- Local `~/.claude/hooks/caveman-{activate,config}.js` patched in place with the project-scope-gating logic from the upstream PR. Backups saved as `*.pre-scope-patch`. Patch will be redundant once the upstream PR merges and the user runs Caveman's installer again.
+
 ## [0.7.0] — 2026-05-19
 
 ### Added

@@ -244,6 +244,15 @@
       <action>**Pin upstream version** (issue #12). Read Caveman's installed version (same resolution chain as the pre-existing branch above). If install was successful but version can't be read, store `"installed-{{date}}"`.</action>
       <action>Record in `{{home_state}}.upstreams.caveman`: { subset, mode, installed_at, source: "curl-pipe-bash", repo, exit_code, version: <pinned-version> }.</action>
     </check>
+
+    <!-- Project-scope opt-in (issue #9 follow-up). Upstream Caveman PR
+         https://github.com/JuliusBrussee/caveman/pull/407 added project-scope
+         gating via .caveman-disable / .caveman-enable marker files in CWD.
+         Flow drops the enable marker so this project always activates caveman
+         even if the user later flips the global default to off (e.g., because
+         they don't want caveman in unrelated repos). Idempotent — re-running
+         /flow-init is safe. -->
+    <action>Drop `.caveman-enable` marker (zero-byte file) in the project root if not already present. This makes the project's intent explicit: "caveman ON here regardless of global default". Useful for teams where some developers run Caveman in only-Flow-projects allowlist mode.</action>
   </check>
 
   <check if="{{plan.caveman_subset}} == none">
