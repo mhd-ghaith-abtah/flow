@@ -20,23 +20,27 @@ Existing per-story workflows are token-heavy. BMad's create-story re-reads epics
 
 ## Install
 
-> **Status (v0.6.1):** the `npx` path is not yet published. Use the Claude Code slash-command path below. Tracking [issue #1](https://github.com/mhd-ghaith-abtah/flow/issues) — `npx @mhd-ghaith-abtah/flow init` lands in v0.7.
+> **Status (v0.7.0):** the `npx` install path is not yet published to npm. The headless CLI (`node bin/flow.js plan / install / doctor / add / remove / uninstall`) is fully working from a clone. Slash commands are the recommended primary path. `npx @mhd-ghaith-abtah/flow init` lands once the package is published; tracked as E1-002 in `docs/flow/sprint.yaml`.
 
 ```bash
-# Inside Claude Code (current — works today)
+# Inside Claude Code (recommended)
 /flow-init
 
-# Coming in v0.7 — works in any terminal
-# npx @mhd-ghaith-abtah/flow init
+# Headless (works today against a clone — npm publish pending)
+git clone https://github.com/mhd-ghaith-abtah/flow.git
+cd flow && npm install && tools/dev-link.sh
+flow plan --profile standard
 ```
 
 The slash-command path runs the same interactive installer. It detects your project shape, asks ~8 questions, then:
-- Installs Flow's three skills (`flow-init`, `flow-sprint`, `flow-story`)
+- Installs Flow's four skills (`flow-init`, `flow-sprint`, `flow-story`, `flow-doctor`)
 - Optionally invokes `npx bmad-method install` with a curated module list
 - Optionally invokes ECC's `install.sh` with a curated profile
+- Optionally invokes Caveman's installer (curl-pipe-bash, with SHA-256 inspection support via `FLOW_INSPECT_INSTALL_SCRIPTS=1`)
 - Sets up MCP servers needed by your selected adapters (`context7`, `playwright`, `linear`, …)
 - Writes `flow.config.yaml` + scaffolds `docs/flow/`
-- Optionally migrates an existing BMad `sprint-status.yaml`
+- Drops a `.caveman-enable` marker so Caveman activates here even if the user's global default is `off` (see Caveman FAQ entry below)
+- Optionally migrates an existing BMad `sprint-status.yaml` (with backup + rollback)
 
 ## Quickstart
 
@@ -120,7 +124,7 @@ ECC owns the per-story primitives (`/plan`, `/prp-implement`, `/code-review`, `/
 Yes for now — Flow expects it. Caveman compresses Claude's responses ~75% in `full` mode, which is what makes mini-profile's 20k-tokens-per-story claim realistic. `/flow-init` installs it automatically with the right registration (see `tools/fix-caveman-shrink.sh` if the MCP proxy gets mis-registered).
 
 **Caveman is now active in every Claude Code session, even my non-Flow projects. Can I scope it?**
-Caveman's `SessionStart` hook activates globally by design upstream. To gate it per-project, either (a) set Caveman's default mode to `off` (`echo off > ~/.claude/.caveman-mode`), then add a per-project hook that flips it to `full` when `flow.config.yaml` is detected, or (b) file an upstream request with the [Caveman project](https://github.com/JuliusBrussee/caveman) for native project-scope detection. `/flow-doctor` flags this when it sees Caveman active outside a Flow project.
+Caveman's `SessionStart` hook activates globally by default. Native project-scope gating is shipping upstream via [JuliusBrussee/caveman#407](https://github.com/JuliusBrussee/caveman/pull/407) (filed and reviewed by Flow's maintainer; awaiting upstream merge). The PR adds `.caveman-enable` / `.caveman-disable` marker files, a `CAVEMAN_PROJECT_SCOPE` env var, and config-driven `projectScope.allow[]` / `deny[]` lists. To opt into allowlist mode today, set `~/.config/caveman/config.json` to `{"defaultMode": "off"}` — Caveman stays silent everywhere except projects with `.caveman-enable` in their root. Flow's `/flow-init` drops that marker automatically, so Flow-managed projects keep working. `/flow-doctor` surfaces a probe for "Caveman active outside a Flow project" until the PR merges.
 
 **Which profile should I pick?**
 - `mini` — solo, single repo, light review, no formal PR process → ~20k/story
