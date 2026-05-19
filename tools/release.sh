@@ -49,7 +49,7 @@ fi
 
 # --- Sanity checks ----------------------------------------------------------
 say() { echo "▸ $*"; }
-run() { if [[ $DRY_RUN -eq 1 ]]; then echo "  (dry-run) $*"; else eval "$@"; fi; }
+run() { if [[ $DRY_RUN -eq 1 ]]; then echo "  (dry-run) $*"; else eval "$*"; fi; }
 
 say "Sanity: working tree clean?"
 if [[ -n "$(git status --porcelain)" ]]; then
