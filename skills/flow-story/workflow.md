@@ -7,7 +7,8 @@
 **Execution model:**
 - **Default (no flag):** execute mode. Chain phases. Only pause at destructive boundaries.
 - **`--advise-only`:** print the command for each phase and end the turn. The pre-v0.3 behavior. Use when you want to inspect what would happen.
-- **`--auto`:** truly no human gates. Skips ECC `/plan` entirely (writes a minimal Plan placeholder so implement can proceed), skips the pre-commit Y/n confirm, and proceeds straight to PR open. Use for clone-of-sibling stories where you've internalized the pattern. Cannot disable safety halts (CRITICAL findings, verify failure, e2e failure, awaiting-merge).
+- **`--auto`:** no human gates inside flow-story. Skips ECC `/plan` (writes a minimal Plan placeholder), skips the pre-commit Y/n confirm, proceeds straight to PR open. Still halts at PR awaiting-merge. Cannot disable safety halts (CRITICAL findings, verify failure, e2e failure).
+- **`--auto-merge`:** the autonomous mode. After `prp-pr` opens the PR, enables GitHub auto-merge (`gh pr merge --auto --squash --delete-branch`), polls until the PR is merged, then automatically runs `/flow-sprint done`. Implies `--auto`. **Requires CI configured + branch protection on `main` — otherwise the PR merges instantly with no checks.** Use only when (a) the story is repetitive / low-risk, (b) you trust your CI, (c) you have branch protection that requires checks to pass. Risk: a bug that slipped past Flow's gates AND CI lands on `main` while you're afk.
 - **`--skip-plan`:** skip the plan phase (jump from missing-plan to implement). Useful for trivial / clone-of-sibling stories.
 - **`--no-verify`:** skip the verify phase (don't run `make verify` / `pnpm verify`). Risky — disables a safety gate. Use for docs-only / content-only changes.
 - **`--no-e2e`:** skip e2e even if story tags would trigger it.
@@ -22,8 +23,9 @@
 <workflow>
 
 <step n="1" goal="Resolve target story + ensure story file exists">
-  <action>Parse flags from args: `--advise-only`, `--auto`, `--skip-plan`, `--no-verify`, `--no-e2e`, `--no-tests`, `--no-review`, `--hard-review`, plus optional positional story id.</action>
+  <action>Parse flags from args: `--advise-only`, `--auto`, `--auto-merge`, `--skip-plan`, `--no-verify`, `--no-e2e`, `--no-tests`, `--no-review`, `--hard-review`, plus optional positional story id.</action>
   <action>If `--no-tests` is set, treat both `--no-verify` and `--no-e2e` as also set.</action>
+  <action>If `--auto-merge` is set, also set `--auto` (auto-merge implies auto throughout the pipeline).</action>
 
   <action>Load `flow.config.yaml`. If missing, HALT with "Run /flow-init first."</action>
   <action>Load `docs/flow/sprint.yaml` → `{{sprint}}`.</action>
@@ -183,26 +185,20 @@
 
     <output>🔍 review → spawning {{reviewer_count}} reviewer(s) in parallel…</output>
 
-    <check if="config.review.use_separate_model AND Agent tool available">
-      <action>Spawn each reviewer as an Agent (parallel, one Agent tool block with N tool calls). For language reviewers and security-review use `subagent_type: <reviewer-id>`. Use `model: "sonnet"` override if config says so. Collect all findings.</action>
-    </check>
-    <check if="NOT use_separate_model">
-      <action>Invoke each reviewer skill sequentially via the Skill tool. Faster wall-clock to do them in parallel via Agent, but same model is fine for v0.</action>
-    </check>
+    <action>**Always spawn reviewers as Agents with `run_in_background: true`.** This keeps each reviewer's intermediate tool calls (greps, file reads, sub-shells) isolated in its own context — only the final findings summary returns to flow-story. Without background mode, a single review pass can consume 50+ tool uses in the main thread.
 
-    <action>Aggregate findings by severity. Render the report.</action>
+      Implementation:
+        - One Agent tool call per reviewer, in a single message (so they run concurrently).
+        - `subagent_type` = `<reviewer-id>` (e.g. `code-reviewer`, `typescript-reviewer`, `security-reviewer`).
+        - `run_in_background: true` on every call.
+        - `description` = short label (e.g. "Review E2-S11 — TypeScript").
+        - `prompt` = self-contained: target diff (refer to "uncommitted changes" or "current branch vs main"), story acceptance criteria, severity rubric (CRITICAL/HIGH/MEDIUM/LOW), output format ("return a markdown table of findings with file:line, severity, finding").
+        - If `config.review.use_separate_model == true`, also set `model: "sonnet"` (or whatever model is configured) for at least one reviewer to get a fresh perspective.
 
-    <check if="any finding is CRITICAL or HIGH">
-      <output>🚨 Review halted — {{N}} CRITICAL, {{M}} HIGH finding(s):
+      After spawning: do NOT block waiting. Note the background task IDs as `{{review_task_ids}}`. Continue to verify phase. Background agents will return findings via notifications — flow-story aggregates them at the commit-pr barrier.
+    </action>
 
-      {{render findings with file:line}}
-
-      Fix these, then re-invoke `/flow-story`. (CRITICAL/HIGH always pauses, even in --auto mode.)
-      </output>
-      <action>End turn.</action>
-    </check>
-
-    <action>Append `## Review Notes` to {{story_file}} with LOW/MEDIUM findings, reviewer names, timestamps.</action>
+    <action>Mark `{{review_spawned}} = true` in state (in-memory for this run; not persisted to story file yet — that happens after aggregation). Re-detect phase. Continue to verify. Do NOT end turn.</action>
     <action>Re-detect phase. Continue. Do NOT end turn.</action>
   </check>
 
@@ -261,6 +257,30 @@
     <action>Append `## Docs` marker to {{story_file}}. Re-detect. Continue. Do NOT end turn.</action>
   </check>
 
+  <!-- ────────────────────── REVIEW BARRIER (before commit-pr) ────────────────────── -->
+  <!-- Background reviewers spawned earlier may not have completed yet. Wait for
+       their notifications and aggregate findings before committing. -->
+  <check if="phase == 'commit-pr' AND {{review_spawned}} AND NOT {{review_done}}">
+    <output>🔍 review barrier — waiting on {{N}} background reviewer(s) before commit…</output>
+    <action>For each background task in `{{review_task_ids}}` (or recently-spawned reviewer agents):
+      - If completed, parse its findings.
+      - If still running, await its completion notification (do not actively poll — the harness notifies on task completion).
+    </action>
+    <action>Aggregate findings by severity.</action>
+
+    <check if="any finding is CRITICAL or HIGH">
+      <output>🚨 Review halted — {{N}} CRITICAL, {{M}} HIGH finding(s):
+
+      {{render findings with file:line, severity, reviewer name}}
+
+      Fix these, then re-invoke `/flow-story`. (CRITICAL/HIGH always pauses, even in --auto / --auto-merge.)
+      </output>
+      <action>End turn.</action>
+    </check>
+
+    <action>Append `## Review Notes` to {{story_file}} with LOW/MEDIUM findings, reviewer names, timestamps. Mark `{{review_done}} = true`. Continue to commit-pr.</action>
+  </check>
+
   <!-- ────────────────────── COMMIT-PR ────────────────────── -->
   <check if="phase == 'commit-pr'">
     <action>Compose commit message: derive `type` from story.tags (ui→feat, fix→fix, chore→chore, default feat) and form `<type>: {{story.id}} — {{story.title}}`.</action>
@@ -300,18 +320,44 @@
       3. Write sprint.yaml.
     </action>
 
-    <output>✓ PR opened: {{pr_url}}. Sprint: doing → review.
+    <output>✓ PR opened: {{pr_url}}. Sprint: doing → review.</output>
 
-    Next: review the PR, merge it, then run `/flow-sprint done {{story.id}}` (or re-invoke `/flow-story` for auto-close on merge).
-    </output>
-    <action>End turn. (PR is open; waiting on human review unless --auto-merge is implemented in a future version.)</action>
+    <!-- --auto-merge: don't end turn; continue into the auto-merge loop -->
+    <check if="--auto-merge">
+      <action>Continue to the auto-merge handler below. Do NOT end turn.</action>
+    </check>
+
+    <output>Next: review the PR, merge it, then `/flow-sprint done {{story.id}}` (or re-invoke `/flow-story` for auto-close).</output>
+    <action>End turn.</action>
   </check>
 
-  <!-- ────────────────────── AWAITING MERGE ────────────────────── -->
-  <check if="phase == 'awaiting-merge'">
+  <!-- ────────────────────── AUTO-MERGE (--auto-merge only) ────────────────────── -->
+  <check if="--auto-merge AND ({{pr_state}} == 'open' OR phase == 'awaiting-merge')">
+    <output>🚀 auto-merge → enabling GitHub auto-merge on PR {{pr_number}}…</output>
+
+    <action>Run `gh pr merge {{pr_number}} --auto --squash --delete-branch`. If it errors with "auto-merge is not allowed for this repository", surface that and HALT — the user needs to enable it in repo settings.</action>
+
+    <output>✓ Auto-merge queued. Waiting for CI + merge…</output>
+
+    <action>**Poll for merge (up to 15 minutes).** Loop:
+      1. `gh pr view {{pr_number}} --json state,mergedAt,mergeable,statusCheckRollup --jq .` → `{{pr_state_now}}`.
+      2. If `mergedAt` is non-null → break, continue to merge-done.
+      3. If state is `CLOSED` without mergedAt → HALT with "PR closed without merge: {{reason}}".
+      4. If `statusCheckRollup` shows any FAILURE → HALT with "CI failed: {{failing_check_name}}. Auto-merge cancelled. Inspect and re-run."
+      5. Otherwise sleep 30 seconds and loop.
+      6. If 15 minutes elapsed: HALT with "Auto-merge timeout. Check {{pr_url}} manually."
+    </action>
+
+    <action>On merge detected → set `{{phase}} = merge-done`. Continue to merge-done handler below. Do NOT end turn.</action>
+  </check>
+
+  <!-- ────────────────────── AWAITING MERGE (manual path) ────────────────────── -->
+  <check if="phase == 'awaiting-merge' AND NOT --auto-merge">
     <output>⏳ awaiting-merge — PR {{pr_url}} ({{pr_state}}, reviewDecision: {{reviewDecision}})
 
     Merge via GitHub UI or `gh pr merge {{pr_number}} --squash --delete-branch`. Then re-invoke `/flow-story` (auto-closes) or `/flow-sprint done {{story.id}}` directly.
+
+    Pass `--auto-merge` next time to skip this halt (requires CI + branch protection).
     </output>
     <action>End turn.</action>
   </check>
@@ -368,6 +414,7 @@
 | verify | reviewed, no Verified marker | run verify adapter's cmd | non-zero exit (always); skipped under `--no-verify` / `--no-tests` |
 | e2e | story tags trigger, e2e adapter active | run journey via adapter | journey failure (always); skipped under `--no-e2e` / `--no-tests` |
 | commit-pr | reviewed AND verified AND e2e-ok | bundle uncommitted + staged + story markers into one commit, open PR | pre-commit Y/n (skipped under `--auto`) |
+| auto-merge | `--auto-merge` flag set, PR open | `gh pr merge --auto --squash --delete-branch` then poll up to 15 min | CI failure (halts); PR closed without merge (halts); timeout (halts) |
 | docs | mode ≥ standard, verified, no Docs marker | invoke `update-docs` (and `update-codemaps` in team) | — |
 | commit-pr | verified, no PR | propose commit; ask Y/n; invoke `prp-commit` + `prp-pr` | user n (skipped if --auto) |
 | awaiting-merge | PR open | print PR link + wait | always (need human merge) |
