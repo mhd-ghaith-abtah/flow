@@ -14,6 +14,37 @@ Thanks for considering a contribution. Flow is small, opinionated, and prefers t
 
 **Anyone with a GitHub account can contribute.** Fork → branch → PR. No special access needed.
 
+## Practical bar
+
+What you actually need on your machine to develop Flow:
+
+| Requirement | Why |
+|---|---|
+| Git | Standard |
+| Node 20+ | `bin/flow.js` + `lib/` + `npm test` |
+| GitHub account | Fork + PR |
+| Claude Code installed (`claude` CLI) | For testing slash-command paths (`/flow-init`, `/flow-story`, `/flow-doctor`). Optional if your PR only touches `lib/` or `bin/`. |
+| `gh` CLI (optional) | If your PR touches the GitHub PR adapter or `tools/release.sh` |
+| `make` (optional) | If your PR touches the `verify-make` adapter |
+| `shellcheck` (optional) | Pre-run locally before CI; matches the CI shellcheck job |
+
+**Setup flow:** `git clone` → `npm install` → `tools/dev-link.sh` → `npm test`. Five minutes from cold to a working dev mount.
+
+**Testing surface:**
+- Code in `lib/` is unit-tested via `node --test` — add a `*.test.js` next to any new module.
+- Skills + adapters are markdown DSL (`workflow.md`) interpreted by Claude Code at runtime — they aren't unit-tested directly. Exercise them by running the slash command (`/flow-init`, `/flow-story`, etc.) against a scratch project or Flow's own dogfood state in `docs/flow/`.
+- Smoke tests in CI cover the four built-in profiles (`flow plan --profile minimal|mini|standard|team`) on Node 20 + 22.
+
+**What you don't need:**
+- BMad, ECC, or Caveman installed locally — Flow only orchestrates them; the per-skill workflows don't import their code.
+- Linear / GitHub / Jira accounts — adapter dev uses stub responses.
+- A published npm package — local dev runs everything via `node bin/flow.js`.
+
+**Common gotchas:**
+- macOS bash is 3.2 (no associative arrays) — `tools/*.sh` must work there. CI is Ubuntu so dev-mac quirks slip through; run `shellcheck tools/` before pushing.
+- `tools/dev-link.sh` creates a mount under `~/.claude/skills/<name>/` per skill. If you add a new skill, register it there + in `catalog.yaml` + in the dev-link script.
+- Caveman fires on every Claude Code session by default. If you're testing a non-caveman behavior, drop `.caveman-disable` in your test CWD (post-PR-#407 feature) or `unset` global mode.
+
 **Good first issues** (small, well-scoped, visible in `docs/flow/sprint.yaml`):
 - `E5-006` — CHANGELOG line-length CI enforcement
 - `E5-009` — `/flow-sprint scope-review --apply-from <path>` (implement or strip the false promise)
