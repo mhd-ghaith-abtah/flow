@@ -329,7 +329,7 @@
 
     <action>Read `docs/_bmad-output/implementation-artifacts/deferred-work.md`. For each non-folded entry, append a one-line summary to `docs/flow/deferred.md`.</action>
 
-    <action>**Do NOT rename or remove `_bmad/`.** Leave it in place so BMad slash commands keep working in this project (the global `bmad-*` skills resolve `_bmad/scripts/...` paths relative to project root). Flow ignores it. The user can archive manually later via `mv _bmad _bmad.archived` once they're sure they're done with BMad in this project, or run `flow uninstall --archive-bmad` in v0.2+.</action>
+    <action>**Do NOT rename or remove `_bmad/`.** Leave it in place so BMad slash commands keep working in this project (the global `bmad-*` skills resolve `_bmad/scripts/...` paths relative to project root). Flow ignores it. The user can archive manually later via `mv _bmad _bmad.archived` once they're sure they're done with BMad in this project. A `flow uninstall --archive-bmad` shorthand is unscheduled — manual archival is one shell command.</action>
 
     <action>Keep `docs/_bmad-output/planning-artifacts/` in place as reference docs (Flow's `flow.config.yaml > reference_docs` points at it).</action>
 
@@ -344,7 +344,7 @@
       mv docs/_bmad-output/implementation-artifacts/sprint-status.yaml.flow-backup-{{backup_ts}} \
          docs/_bmad-output/implementation-artifacts/sprint-status.yaml
 
-    Or run `flow uninstall --restore-backup {{backup_ts}}` once that command lands in v0.2.
+    A `flow uninstall --restore-backup {{backup_ts}}` shorthand is unscheduled — the manual rollback above is the canonical path.
     </output>
   </check>
 </step>

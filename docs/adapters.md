@@ -1,8 +1,8 @@
 # Adapters
 
-Flow's per-category adapter system lets you swap integrations without changing any skill code. There are four adapter families today; more land in v0.2.
+Flow's per-category adapter system lets you swap integrations without changing any skill code. There are four adapter families today; additional adapters and families land when there's a concrete use case (see Flow's [validate-demand-before-building principle](../ROADMAP.md#guiding-principles)).
 
-## Families + v0.1 options
+## Families + available picks
 
 | Family | Picks | What it does |
 |---|---|---|
@@ -11,7 +11,7 @@ Flow's per-category adapter system lets you swap integrations without changing a
 | `e2e` | `playwright-mcp`, `none` | End-to-end test driver — run journeys, capture artifacts |
 | `verify` | `make`, `pnpm`, `custom` | Verify command — typecheck + lint + unit tests in one |
 
-Coming in v0.2: `jira`, `notion`, `plain` (issue-tracker); `gitlab`, `bitbucket` (pr); `cypress` (e2e); `slack`, `discord` (notification — new family).
+**Likely-but-unscheduled** (PRs welcome — the adapter contract is small): Jira, Notion, Plain (issue-tracker); GitLab, Bitbucket (pr); Cypress (e2e); Slack, Discord (notification — would be a new family). None of these are on the roadmap today; the adapter contract in `adapters/<family>/<name>/_interface.md` is small enough that a contributor can ship one in a weekend.
 
 ## Picking adapters
 

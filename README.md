@@ -74,14 +74,14 @@ All three are mode flags on the same skills, not different code paths.
 
 Pick one per category in `flow.config.yaml`:
 
-| Category | v0.1 adapters |
+| Category | Available |
 |---|---|
 | Issue tracker | `linear`, `github-issues`, `none` |
 | PR platform | `github`, `none` |
 | E2E | `playwright-mcp`, `none` |
 | Verify | `make`, `pnpm`, `custom` |
 
-More coming in v0.2: `jira`, `notion`, `plain`, `gitlab`, `bitbucket`, `cypress`, `slack`, `discord`.
+Additional adapters (Jira, Notion, Plain, GitLab, Bitbucket, Cypress, Slack, Discord, etc.) land when a real user surfaces a concrete use case — see Flow's [validate-demand-before-building principle](ROADMAP.md#guiding-principles). The adapter contract in `adapters/<family>/<name>/_interface.md` is small (one YAML manifest + a handful of skill workflows) so PRs are welcome.
 
 ## Architecture
 
@@ -145,7 +145,7 @@ Yes — as of [affaan-m/ECC#2006](https://github.com/affaan-m/ECC/pull/2006) (fi
 You can swap profiles with `/flow-init --update --profile <name>` — it's just a different bundle, not a different codepath.
 
 **What if I don't use GitHub?**
-Pick `adapter:pr-none` during `/flow-init` and configure `verify` + `e2e` to whatever you do use. GitLab + Bitbucket adapters are planned for v0.2.
+Pick `adapter:pr-none` during `/flow-init` and configure `verify` + `e2e` to whatever you do use. GitLab and Bitbucket PR adapters are unscheduled — the adapter contract is small enough to ship one in a weekend, and PRs are welcome (see `adapters/pr/<name>/_interface.md`).
 
 **How do I upgrade Flow?**
 `/flow-init --update` is idempotent. It re-detects project shape, diffs against `install-state.json`, and applies only the deltas. Upstream installers (BMad / ECC / Caveman) are re-invoked only when their pinned subset changes.
