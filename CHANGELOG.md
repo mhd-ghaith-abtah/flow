@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- `package.json` `files` block tightened for first npm publish: exclude `*.test.js` (internal unit tests, not user examples) and `docs/flow/` (Flow's internal dogfood backlog — sprint.yaml, scope-reviews, deferred ledger). Tarball drops from 61 → 53 files, 91.2 kB → 80.8 kB packed. User-runnable utilities (`tools/lint-changelog.js`, `tools/fix-caveman-shrink.sh`) added to the allowlist.
+
 ## [0.7.1] — 2026-05-19
 
 ### Added
