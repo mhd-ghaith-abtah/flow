@@ -36,7 +36,7 @@ Called before `transition_to_done`. Confirm the linked PR is actually merged so 
 
 ## Config keys
 
-Adapters declare the keys they need in `flow.config.yaml > integrations.issue_tracker.*`. The Flow installer prompts for these at first install or when the adapter is swapped in via `flow adapter swap`.
+Adapters declare the keys they need in `flow.config.yaml > integrations.issue_tracker.*`. The Flow installer prompts for these at first install or when the adapter is swapped via `flow add adapter:issue-tracker-<id>` (or a hand-edit of `flow.config.yaml`).
 
 ## Failure handling
 

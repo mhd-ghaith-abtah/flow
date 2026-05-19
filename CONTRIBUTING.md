@@ -45,10 +45,10 @@ What you actually need on your machine to develop Flow:
 - `tools/dev-link.sh` creates a mount under `~/.claude/skills/<name>/` per skill. If you add a new skill, register it there + in `catalog.yaml` + in the dev-link script.
 - Caveman fires on every Claude Code session by default. If you're testing a non-caveman behavior, drop `.caveman-disable` in your test CWD (post-PR-#407 feature) or `unset` global mode.
 
-**Good first issues** (small, well-scoped, visible in `docs/flow/sprint.yaml`):
-- `E5-006` — CHANGELOG line-length CI enforcement
-- `E5-009` — `/flow-sprint scope-review --apply-from <path>` (implement or strip the false promise)
-- Any new adapter from the v0.2 list in `docs/adapters.md` (jira, gitlab, bitbucket, cypress, slack, discord)
+**Good first issues** (small, well-scoped):
+- A new adapter from the "likely-but-unscheduled" list in `docs/adapters.md` (Jira, GitLab, Bitbucket, Cypress, Slack, Discord). The adapter contract in `adapters/<family>/<name>/_interface.md` is small enough to ship in a weekend.
+- Real pixel-diff for `screenshot_diff()` in `adapters/e2e/playwright-mcp.md` (currently stubbed; would use `pixelmatch` or `odiff`).
+- Any open story in `docs/flow/sprint.yaml` with status `ready` or `backlog` — `gh issue create` or just open a PR referencing the story id.
 
 **Pre-PR habits the maintainer values**
 - Open an issue first if the change is non-trivial (>50 LOC or any new file)

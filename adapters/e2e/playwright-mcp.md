@@ -76,7 +76,7 @@ Uses the Playwright MCP server. Runs an interactive browser session, executes jo
 
 ## screenshot_diff(baseline_path, current_path)
 
-Optional — v0.1 returns `{ diff_pct: null, note: "not implemented" }`. v0.2 will use `pixelmatch` or `odiff`.
+Optional — currently returns `{ diff_pct: null, note: "not implemented" }`. A real pixel-diff (likely `pixelmatch` or `odiff`) is unscheduled; PRs welcome. Until then, callers should treat a `null` diff_pct as "skip the diff gate".
 
 ## Failure handling
 

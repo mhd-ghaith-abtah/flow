@@ -14,7 +14,7 @@ Runs `make verify` (or another target). Standard for repos that wrap their build
 
 ## precheck
 
-1. `test -f Makefile` → if false, halt: "No Makefile at repo root. Either create one with a `{{target}}:` target or switch to `flow adapter swap verify pnpm` / `custom`."
+1. `test -f Makefile` → if false, halt: "No Makefile at repo root. Either create one with a `{{target}}:` target or switch via `flow add adapter:verify-pnpm` / `flow add adapter:verify-custom`."
 2. `grep -q '^{{target}}:' Makefile` → if false, halt: "Makefile is present but has no `{{target}}:` target."
 
 ## run

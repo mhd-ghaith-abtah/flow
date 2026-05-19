@@ -348,7 +348,7 @@
         <action>After all suggestions processed: write sprint.yaml, record `metadata.last_scope_review.applied_at` = today + summary counts.</action>
       </check>
       <check if="user picks later">
-        <action>Record `metadata.last_scope_review.report_pending` = true + filename. To apply later, re-run `/flow-sprint scope-review` — it skips the audit-agent phase when a recent report exists for today and goes straight to the interactive walkthrough. (A dedicated `--apply-from <path>` flag is tracked as E5-009 for a future release; for now the same-day re-run path is the supported workflow.)</action>
+        <action>Record `metadata.last_scope_review.report_pending` = true + filename. To apply later, re-run `/flow-sprint scope-review` — it skips the audit-agent phase when a recent report exists for today and goes straight to the interactive walkthrough. (E5-009 considered a dedicated `--apply-from <path>` flag and was closed as strip-false-promise; the same-day re-run path is the canonical workflow.)</action>
       </check>
     </check>
 

@@ -20,7 +20,7 @@
     - If env `FLOW_REPO_ROOT` is set, use it.
     - Else if running from `~/.claude/skills/flow-init/`, walk up to find a directory containing `catalog.yaml` (npm install path is typically `~/.npm-global/lib/node_modules/@mhd-ghaith-abtah/flow/`).
     - Else if the CWD contains `catalog.yaml`, use the CWD (dev mode).
-    - Else HALT with "catalog.yaml not found — re-install Flow (clone https://github.com/mhd-ghaith-abtah/flow and run `tools/dev-link.sh`, or wait for npm v0.7).".
+    - Else HALT with "catalog.yaml not found — re-install Flow: `npm install -g @mhd-ghaith-abtah/flow@beta` (or clone https://github.com/mhd-ghaith-abtah/flow and run `tools/dev-link.sh` for development).".
   </action>
 
   <action>Load `{{catalog}}` from `{{repo_root}}/catalog.yaml`. Validate against `{{repo_root}}/schemas/catalog.schema.json` if present.</action>

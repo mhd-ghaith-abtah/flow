@@ -54,8 +54,11 @@ Each adapter is a markdown file with sections for each operation in the family's
 
 ## Swapping after install
 
+Two supported paths:
+
 ```
-flow adapter swap pr github-issues   # not yet implemented in v0.7
+flow add adapter:pr-github-issues
+flow remove adapter:pr-github
 ```
 
 Or hand-edit `flow.config.yaml`:

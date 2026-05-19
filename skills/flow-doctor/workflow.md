@@ -37,7 +37,7 @@
     - Verify the adapter file exists at `{{repo_root}}/adapters/<family>/<adapter-id>.md` → `adapter.<family>.file`
     - Probe `.claude/flow/adapters/<family>.md` or `.claude/flow/adapters/<family>/<adapter-id>.md` (depending on layout):
       - If it's a symlink → resolve target. Record `adapter.<family>.kind: symlink → <target>`. If target doesn't exist, record `⚠ broken symlink`.
-      - If it's a regular file → record `adapter.<family>.kind: regular_file`. Issue #28: this is the **mixed state** — Flow expects symlinks (so updating the upstream `adapters/<family>/*.md` propagates automatically), but a regular file means someone edited the project-side copy directly. Record `bug.adapter_symlink_drift: ⚠ <family> is a regular file, will not pick up upstream adapter updates` and suggest `flow adapter swap <family> <id>` (forces re-symlink) or accept the divergence intentionally.
+      - If it's a regular file → record `adapter.<family>.kind: regular_file`. Issue #28: this is the **mixed state** — Flow expects symlinks (so updating the upstream `adapters/<family>/*.md` propagates automatically), but a regular file means someone edited the project-side copy directly. Record `bug.adapter_symlink_drift: ⚠ <family> is a regular file, will not pick up upstream adapter updates` and suggest `flow remove adapter:<family>-<id> && flow add adapter:<family>-<id>` (forces re-symlink) or accept the divergence intentionally.
       - If neither exists → record `⚠ adapter file missing` (suggest `flow-init --repair`).
   </action>
 </step>

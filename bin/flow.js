@@ -34,7 +34,6 @@ ${chalk.bold('Commands:')}
   list-components [--family X]  List available components
   list-mcps                     List MCP servers Flow tracks
   mcp <add|remove|reauth> ...   Manage MCP servers
-  adapter <swap|list> ...       Manage active adapters
   help [command]                Show help
 
 ${chalk.bold('Common flags:')}
@@ -68,7 +67,7 @@ Version ${PKG.version} · ${chalk.dim(PKG.homepage)}
 
 const COMMANDS = [
   'init', 'install', 'plan', 'status', 'doctor', 'add', 'remove', 'uninstall',
-  'list-profiles', 'list-components', 'list-mcps', 'mcp', 'adapter', 'help', 'version', '--version'
+  'list-profiles', 'list-components', 'list-mcps', 'mcp', 'help', 'version', '--version'
 ];
 
 async function main() {
