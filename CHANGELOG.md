@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] — 2026-05-19
+
 ### Added
 - `.github/workflows/ci.yml` — GitHub Actions CI on push + PR. Runs `npm test` + `node bin/flow.js plan` for all four profiles on Node 20 and 22, shellchecks `tools/`, and enforces the CHANGELOG-touched rule from CONTRIBUTING.md (fails the PR if shippable files change without a CHANGELOG entry). Closes the second half of #3.
 - `.github/PULL_REQUEST_TEMPLATE.md` — PR checklist matching CONTRIBUTING.md.
