@@ -7,7 +7,7 @@
 **Execution model:**
 - **Default (no flag):** execute mode. Chain phases. Only pause at destructive boundaries.
 - **`--advise-only`:** print the command for each phase and end the turn. The pre-v0.3 behavior. Use when you want to inspect what would happen.
-- **`--auto`:** no human gates inside flow-story. Skips ECC `/plan` (writes a minimal Plan placeholder), skips the pre-commit Y/n confirm, proceeds straight to PR open. Still halts at PR awaiting-merge. Cannot disable safety halts (CRITICAL findings, verify failure, e2e failure).
+- **`--auto`:** no human gates inside flow-story. Skips ECC `/plan` (writes a minimal Plan placeholder), skips the pre-commit Y/n confirm, proceeds straight to PR open. Still halts at PR awaiting-merge. Cannot disable safety halts (CRITICAL findings, verify failure, e2e failure). **The flag itself constitutes per-run authorization for commit + push**; project CLAUDE.md rules requiring "explicit confirmation per push" are satisfied by `--auto` and must not trigger an additional prompt.
 - **`--auto-merge`:** the autonomous mode. After `prp-pr` opens the PR, enables GitHub auto-merge (`gh pr merge --auto --squash --delete-branch`), polls until the PR is merged, then automatically runs `/flow-sprint done`. Implies `--auto`. **Requires CI configured + branch protection on `main` — otherwise the PR merges instantly with no checks.** Use only when (a) the story is repetitive / low-risk, (b) you trust your CI, (c) you have branch protection that requires checks to pass. Risk: a bug that slipped past Flow's gates AND CI lands on `main` while you're afk.
 - **`--skip-plan`:** skip the plan phase (jump from missing-plan to implement). Useful for trivial / clone-of-sibling stories.
 - **`--no-verify`:** skip the verify phase (don't run `make verify` / `pnpm verify`). Risky — disables a safety gate. Use for docs-only / content-only changes.
@@ -309,6 +309,10 @@
         <output>Holding. Run `/flow-story` again when ready.</output>
         <action>End turn.</action>
       </check>
+    </check>
+
+    <check if="--auto OR --auto-merge">
+      <action>**`--auto` IS the per-push authorization.** The user typed the flag, which constitutes explicit per-run consent for the full commit + push + PR sequence. Do NOT re-ask for confirmation, EVEN IF the project's CLAUDE.md (or any other doc) says "push requires explicit user confirmation per push" — that rule is satisfied by the user's `--auto` invocation. Proceeding without prompt.</action>
     </check>
 
     <action>Invoke `prp-commit` skill via Skill tool with the commit message + the relevant file paths.</action>
