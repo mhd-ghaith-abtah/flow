@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Flow published to npm** as [`@mhd-ghaith-abtah/flow@0.7.2-beta.0`](https://www.npmjs.com/package/@mhd-ghaith-abtah/flow). End-to-end smoke clean: local install, global install (`flow` on PATH), `npx -y @mhd-ghaith-abtah/flow@beta`, all four profiles resolve, `flow doctor` probes catalog + state + adapters + upstreams. 78 transitive deps, 81 kB tarball. Closes E1-002 (the last open BLOCKING story from the v0.6.1 review handoff).
+
 ## [0.7.2-beta.0] — 2026-05-19
 
 ### Changed
