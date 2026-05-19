@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Upstream ECC PR merged** — [affaan-m/ECC#2006](https://github.com/affaan-m/ECC/pull/2006) adds a `claude-project` install target (project-scope ECC), symmetric with the existing user-scope `claude` target. Closes the install-target matrix for Claude Code (now 7 project-scope + 4 home-scope adapters) and removes the need for Flow's `HOME=$PROJECT/.flow-vendor` shim. Closes E7-001. Unblocks E7-002 → E7-005 (catalog scope flag, init wiring, doctor probe, docs).
 - **Flow published to npm** as [`@mhd-ghaith-abtah/flow@0.7.2-beta.0`](https://www.npmjs.com/package/@mhd-ghaith-abtah/flow). End-to-end smoke clean: local install, global install (`flow` on PATH), `npx -y @mhd-ghaith-abtah/flow@beta`, all four profiles resolve, `flow doctor` probes catalog + state + adapters + upstreams. 78 transitive deps, 81 kB tarball. Closes E1-002 (the last open BLOCKING story from the v0.6.1 review handoff).
 
 ### Changed
+- README gained an FAQ entry on per-project ECC installs (via the merged `claude-project` target) and a new "Upstream contributions" subsection under Credits listing ECC #2006 (merged) and Caveman #407 (in review).
 - README Install section refreshed for the npm publish — now shows four paths (`/flow-init` slash command, `npm install -g @mhd-ghaith-abtah/flow@beta`, `npx -y @mhd-ghaith-abtah/flow@beta`, clone for development). Status block updated from "not yet published" to "published as beta, soaking before latest promotion".
 
 ### Added

@@ -134,6 +134,9 @@ Yes for now — Flow expects it. Caveman compresses Claude's responses ~75% in `
 **Caveman is now active in every Claude Code session, even my non-Flow projects. Can I scope it?**
 Caveman's `SessionStart` hook activates globally by default. Native project-scope gating is shipping upstream via [JuliusBrussee/caveman#407](https://github.com/JuliusBrussee/caveman/pull/407) (filed and reviewed by Flow's maintainer; awaiting upstream merge). The PR adds `.caveman-enable` / `.caveman-disable` marker files, a `CAVEMAN_PROJECT_SCOPE` env var, and config-driven `projectScope.allow[]` / `deny[]` lists. To opt into allowlist mode today, set `~/.config/caveman/config.json` to `{"defaultMode": "off"}` — Caveman stays silent everywhere except projects with `.caveman-enable` in their root. Flow's `/flow-init` drops that marker automatically, so Flow-managed projects keep working. `/flow-doctor` surfaces a probe for "Caveman active outside a Flow project" until the PR merges.
 
+**Can I install ECC per-project instead of into `~/.claude/`?**
+Yes — as of [affaan-m/ECC#2006](https://github.com/affaan-m/ECC/pull/2006) (filed and merged by Flow's maintainer, 2026-05-19). Pass `--target claude-project` to ECC's installer and it lands under `<projectRoot>/.claude/rules/ecc` + `<projectRoot>/.claude/skills/ecc` instead of `~/.claude/`. Symmetric with the existing `--target claude` (home-scope) — same namespacing, same locale handling, no breaking change. Useful for monorepos, polyglot workspaces, or teams that want ECC scoped per-repo without contaminating the developer's global Claude Code config. Flow's `team` profile will default to project-scope once E7-002 → E7-005 ship in v0.8; you can opt in today by calling ECC directly.
+
 **Which profile should I pick?**
 - `mini` — solo, single repo, light review, no formal PR process → ~20k/story
 - `standard` — solo or small team, formal review, GitHub PRs, Playwright E2E → ~40k/story
@@ -167,6 +170,13 @@ Flow stands on:
 - **[Get Shit Done (GSD)](https://github.com/gsd-build/get-shit-done)** by TÂCHES — concept inspiration
 - **[spec-kit](https://github.com/github/spec-kit)** by GitHub — spec-driven development pattern
 - **[AI Dev Tasks](https://github.com/snarktank/ai-dev-tasks)** by snarktank — lean PRD + tasks pattern
+
+### Upstream contributions
+
+Where Flow needed a capability that didn't exist yet, we sent it upstream instead of forking:
+
+- **[affaan-m/ECC#2006](https://github.com/affaan-m/ECC/pull/2006)** — `claude-project` install target (project-scope ECC). **Merged 2026-05-19.** Closes the install-target matrix for Claude Code and removes the need for `HOME=$PROJECT/...` shims.
+- **[JuliusBrussee/caveman#407](https://github.com/JuliusBrussee/caveman/pull/407)** — project-scope gating via marker files, env var, and allow/deny lists. *In review.*
 
 ## License
 

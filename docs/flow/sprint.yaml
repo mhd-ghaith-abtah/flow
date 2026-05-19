@@ -580,17 +580,21 @@ stories:
   - id: E7-001
     title: Upstream PR — add claude-project target adapter to ECC
     epic: E7
-    status: ready
+    status: done
     tags: [upstream, ecc, scope]
     estimate: 3h
     references:
-      - "https://github.com/affaan-m/ECC"
-      - "scripts/lib/install-targets/claude-home.js (in ECC repo)"
+      - "https://github.com/affaan-m/ECC/pull/2006"
     notes: |
-      ECC already has 6 project-scope target adapters (cursor, antigravity,
-      gemini, codebuddy, joycode, zed). Mirror cursor-project.js pattern with
-      .claude/ root + ecc namespace. No breaking change — existing --target
-      claude continues to route to user-scope.
+      MERGED upstream into affaan-m/ECC main on 2026-05-19 (merge commit
+      98bd5174). Adds claude-project adapter symmetric with claude
+      (home-scope) — installs ECC into <projectRoot>/.claude/ with same
+      rules/ecc + skills/ecc namespacing. Closes the install-target
+      matrix (now 7 project-scope + 4 home-scope adapters).
+      No breaking change — existing --target claude unchanged.
+      Tests: install-targets 35/35 (4 new), end-to-end smoke parity with
+      claude target (359 ops both, scope differs only).
+      Unblocks E7-002 → E7-005.
 
   - id: E7-002
     title: Flow catalog gains upstreams.ecc.install_scope (user|project)
