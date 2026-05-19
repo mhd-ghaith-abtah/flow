@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Caveman installer swapped to a temporary fork pin** — `catalog.yaml` Caveman `installer.cmd` now `npx -y "github:mhd-ghaith-abtah/caveman#flow-pin-v0.1"` (was upstream curl-pipe-bash). The fork carries the project-scope gating patches from JuliusBrussee/caveman#407 applied on top of upstream `main`. Reason: upstream Caveman has a ~134-PR backlog with ~5 merges/month, so waiting for #407 to land would block Flow's team profile for months. The fork is documented as temporary in `catalog.yaml` (new fields: `upstream_repo`, `upstream_pr`, `fork_status`) with an explicit swap-back plan. Doctor probe shows the fork status so users know when upstream merges. README updates the FAQ + "Upstream contributions" section to reflect the conditional compose-vs-fork strategy.
+
 ### Added
 - **Upstream ECC PR merged** — [affaan-m/ECC#2006](https://github.com/affaan-m/ECC/pull/2006) adds a `claude-project` install target (project-scope ECC), symmetric with the existing user-scope `claude` target. Closes the install-target matrix for Claude Code (now 7 project-scope + 4 home-scope adapters) and removes the need for Flow's `HOME=$PROJECT/.flow-vendor` shim. Closes E7-001. Unblocks E7-002 → E7-005 (catalog scope flag, init wiring, doctor probe, docs).
 - **Flow published to npm** as [`@mhd-ghaith-abtah/flow@0.7.2-beta.0`](https://www.npmjs.com/package/@mhd-ghaith-abtah/flow). End-to-end smoke clean: local install, global install (`flow` on PATH), `npx -y @mhd-ghaith-abtah/flow@beta`, all four profiles resolve, `flow doctor` probes catalog + state + adapters + upstreams. 78 transitive deps, 81 kB tarball. Closes E1-002 (the last open BLOCKING story from the v0.6.1 review handoff).

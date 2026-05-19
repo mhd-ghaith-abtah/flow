@@ -220,14 +220,22 @@ stories:
     closed_in: e73f4bb
 
   - id: E2-006
-    title: Caveman project-scope gating (upstream PR + slowdown fix)
+    title: Caveman project-scope gating (upstream PR + fork pin for now)
     epic: E2
-    status: review
-    tags: [caveman, scope, perf]
+    status: monitor
+    tags: [caveman, scope, perf, fork]
     merged:
       - E4-005
     references:
       - https://github.com/JuliusBrussee/caveman/pull/407
+      - https://github.com/mhd-ghaith-abtah/caveman/tree/flow-pin-v0.1
+    notes: |
+      Upstream PR #407 filed 2026-05-19 but upstream has ~134 open PRs and
+      ~5 merges/month — wait would be months. As of 2026-05-20 Flow pins
+      Caveman to a fork tag (mhd-ghaith-abtah/caveman @ flow-pin-v0.1) with
+      the #407 patches applied. Catalog will swap back to upstream the day
+      #407 merges. Watch via: gh pr view 407 --repo JuliusBrussee/caveman
+      Status stays `monitor` (not done) until the swap-back happens.
 
   - id: E2-007
     title: Plan-resolution path tree cleanup (unreachable Path E/F)

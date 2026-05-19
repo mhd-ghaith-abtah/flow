@@ -270,8 +270,21 @@ upstreams:
 
   caveman:
     name: "Caveman"
-    repo: "https://github.com/JuliusBrussee/caveman"
-    description: "Output-compression layer for Claude Code (~46% input, ~75% output token savings). Flow expects Caveman to be active so its outputs stay tight."
+    # TEMPORARY FORK NOTICE
+    # ---------------------
+    # Flow currently installs Caveman from a patched fork pinned at
+    # github:mhd-ghaith-abtah/caveman#flow-pin-v0.1. The fork carries the
+    # project-scope gating patches from JuliusBrussee/caveman#407 (filed
+    # 2026-05-19, sitting in a ~134-PR upstream backlog with ~5 merges/month).
+    # The upstream repo is the source of truth; the fork tracks `main` and
+    # applies only the gating delta on top.
+    # SWAP PLAN: when #407 merges upstream, flip `repo` + `installer.cmd`
+    # back to JuliusBrussee/caveman and delete this notice (E2-006 ↻).
+    repo: "https://github.com/mhd-ghaith-abtah/caveman"
+    upstream_repo: "https://github.com/JuliusBrussee/caveman"
+    upstream_pr: "https://github.com/JuliusBrussee/caveman/pull/407"
+    fork_status: "temporary — pending upstream merge of #407"
+    description: "Output-compression layer for Claude Code (~46% input, ~75% output token savings). Flow expects Caveman to be active so its outputs stay tight. Installed from a Flow-maintained fork until project-scope gating lands upstream."
     detect:
       # Current Caveman installer routes via Claude Code's plugin marketplace —
       # files land under ~/.claude/plugins/cache/caveman/, NOT the legacy
@@ -280,12 +293,16 @@ upstreams:
       check_cmd: "find $HOME/.claude/plugins -path '*caveman*SKILL.md' -print -quit 2>/dev/null | grep -q . || test -f $HOME/.claude/skills/caveman/SKILL.md || test -f $HOME/.claude/hooks/caveman-config.js"
       hooks_cmd: "ls $HOME/.claude/hooks/caveman-* 2>/dev/null"
     installer:
-      cmd: "curl -fsSL https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.sh | bash"
+      # Pinned to a stable tag on the Flow-maintained fork. The tag carries the
+      # #407 gating patches applied on top of upstream main. To inspect before
+      # running, set $FLOW_INSPECT_INSTALL_SCRIPTS=1 and Flow will download +
+      # diff against upstream first.
+      cmd: "npx -y \"github:mhd-ghaith-abtah/caveman#flow-pin-v0.1\""
       # Mirror of detect.check_cmd — succeeds for either the plugin-marketplace
       # layout (current) or the legacy ~/.claude/skills/caveman/ layout (older
       # installer releases). Verifies "the install landed somewhere we can find".
       verify_after_cmd: "find $HOME/.claude/plugins -path '*caveman*SKILL.md' -print -quit 2>/dev/null | grep -q . || test -f $HOME/.claude/skills/caveman/SKILL.md || test -f $HOME/.claude/hooks/caveman-config.js"
-      security_note: "Caveman ships only via curl-pipe-bash. Flow will surface this and ask for confirmation unless --yes is passed. To inspect the script before running, set $FLOW_INSPECT_INSTALL_SCRIPTS=1 — Flow will download to /tmp first, pause for review, then execute."
+      security_note: "Caveman installs via npx from a Flow-maintained fork (pinned tag flow-pin-v0.1). Fork = upstream main + JuliusBrussee/caveman#407 patches. Flow will surface this and ask for confirmation unless --yes is passed. To inspect the fork's source before running: gh repo view mhd-ghaith-abtah/caveman --branch flow-pin-v0.1 OR set $FLOW_INSPECT_INSTALL_SCRIPTS=1."
     available_modes: [lite, full, ultra, wenyan]
     curated_subsets:
       none:

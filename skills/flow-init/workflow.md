@@ -211,12 +211,18 @@
     </check>
 
     <check if="{{caveman_present}} == false">
-      <output>📦 Caveman not detected. About to install via curl-pipe-bash:
+      <output>📦 Caveman not detected. About to install via npx-from-fork:
 
       $ {{catalog.upstreams.caveman.installer.cmd}}
 
       Caveman is an output-compression layer ({{plan.caveman_subset}} mode). It modifies all Claude Code sessions globally to cut response tokens.
-      Source: {{catalog.upstreams.caveman.repo}}
+
+      Source (temporary fork): {{catalog.upstreams.caveman.repo}}
+      Upstream: {{catalog.upstreams.caveman.upstream_repo}}
+      Fork status: {{catalog.upstreams.caveman.fork_status}}
+      Tracking PR: {{catalog.upstreams.caveman.upstream_pr}}
+
+      The fork applies project-scope gating patches from PR #407 on top of upstream main. Flow will swap back to upstream once #407 merges.
       </output>
 
       <check if="$FLOW_INSPECT_INSTALL_SCRIPTS == 1">
@@ -242,16 +248,18 @@
       <action>Set Caveman mode to `{{plan.caveman_mode}}` (from the chosen subset). Caveman's install script may handle this; if not, document the post-install command the user should run (e.g. `/caveman full`).</action>
 
       <action>**Pin upstream version** (issue #12). Read Caveman's installed version (same resolution chain as the pre-existing branch above). If install was successful but version can't be read, store `"installed-{{date}}"`.</action>
-      <action>Record in `{{home_state}}.upstreams.caveman`: { subset, mode, installed_at, source: "curl-pipe-bash", repo, exit_code, version: <pinned-version> }.</action>
+      <action>Record in `{{home_state}}.upstreams.caveman`: { subset, mode, installed_at, source: "npx-from-fork", repo, fork_tag: "flow-pin-v0.1", upstream_pr: 407, exit_code, version: <pinned-version> }.</action>
     </check>
 
-    <!-- Project-scope opt-in (issue #9 follow-up). Upstream Caveman PR
-         https://github.com/JuliusBrussee/caveman/pull/407 added project-scope
-         gating via .caveman-disable / .caveman-enable marker files in CWD.
-         Flow drops the enable marker so this project always activates caveman
-         even if the user later flips the global default to off (e.g., because
-         they don't want caveman in unrelated repos). Idempotent — re-running
-         /flow-init is safe. -->
+    <!-- Project-scope opt-in (issue #9 follow-up). Flow installs Caveman from
+         a temporary fork (github:mhd-ghaith-abtah/caveman#flow-pin-v0.1) that
+         carries the project-scope gating patches from JuliusBrussee/caveman#407
+         applied on top of upstream main. The fork exists because upstream has a
+         ~134-PR backlog and ~5 merges/month — #407 would block Flow for months.
+         When #407 merges upstream we swap catalog.yaml back and delete the fork
+         (see catalog.yaml SWAP PLAN comment). The .caveman-enable marker Flow
+         drops here works identically against upstream and the fork — both honor
+         the marker, so swapping packages is a no-op at the project level. -->
     <action>Drop `.caveman-enable` marker (zero-byte file) in the project root if not already present. This makes the project's intent explicit: "caveman ON here regardless of global default". Useful for teams where some developers run Caveman in only-Flow-projects allowlist mode.</action>
   </check>
 

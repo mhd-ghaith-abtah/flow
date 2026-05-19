@@ -132,7 +132,7 @@ ECC owns the per-story primitives (`/plan`, `/prp-implement`, `/code-review`, `/
 Yes for now — Flow expects it. Caveman compresses Claude's responses ~75% in `full` mode, which is what makes mini-profile's 20k-tokens-per-story claim realistic. `/flow-init` installs it automatically with the right registration (see `tools/fix-caveman-shrink.sh` if the MCP proxy gets mis-registered).
 
 **Caveman is now active in every Claude Code session, even my non-Flow projects. Can I scope it?**
-Caveman's `SessionStart` hook activates globally by default. Native project-scope gating is shipping upstream via [JuliusBrussee/caveman#407](https://github.com/JuliusBrussee/caveman/pull/407) (filed and reviewed by Flow's maintainer; awaiting upstream merge). The PR adds `.caveman-enable` / `.caveman-disable` marker files, a `CAVEMAN_PROJECT_SCOPE` env var, and config-driven `projectScope.allow[]` / `deny[]` lists. To opt into allowlist mode today, set `~/.config/caveman/config.json` to `{"defaultMode": "off"}` — Caveman stays silent everywhere except projects with `.caveman-enable` in their root. Flow's `/flow-init` drops that marker automatically, so Flow-managed projects keep working. `/flow-doctor` surfaces a probe for "Caveman active outside a Flow project" until the PR merges.
+Yes, in Flow-managed projects this works out of the box. Flow installs Caveman from a **temporary fork** ([mhd-ghaith-abtah/caveman @ `flow-pin-v0.1`](https://github.com/mhd-ghaith-abtah/caveman/tree/flow-pin-v0.1)) that carries the project-scope gating patches from [JuliusBrussee/caveman#407](https://github.com/JuliusBrussee/caveman/pull/407) on top of upstream `main`. The fork exists because upstream Caveman has a ~134-PR review backlog with ~5 merges/month — waiting for #407 to merge would block Flow for months. **When #407 merges upstream, Flow swaps the catalog back to `JuliusBrussee/caveman` and deletes the fork.** The `.caveman-enable` marker Flow drops in your project root works identically against upstream and the fork, so the swap is a no-op at the project level. To opt into project-scope gating in non-Flow projects today, you can either install Caveman from the same fork tag or set `~/.config/caveman/config.json` to `{"defaultMode": "off"}` and rely on the markers globally. `/flow-doctor` surfaces a probe for "Caveman fork in use — track upstream PR #407" so you know when to expect the swap.
 
 **Can I install ECC per-project instead of into `~/.claude/`?**
 Yes — as of [affaan-m/ECC#2006](https://github.com/affaan-m/ECC/pull/2006) (filed and merged by Flow's maintainer, 2026-05-19). Pass `--target claude-project` to ECC's installer and it lands under `<projectRoot>/.claude/rules/ecc` + `<projectRoot>/.claude/skills/ecc` instead of `~/.claude/`. Symmetric with the existing `--target claude` (home-scope) — same namespacing, same locale handling, no breaking change. Useful for monorepos, polyglot workspaces, or teams that want ECC scoped per-repo without contaminating the developer's global Claude Code config. Flow's `team` profile will default to project-scope once E7-002 → E7-005 ship in v0.8; you can opt in today by calling ECC directly.
@@ -171,12 +171,16 @@ Flow stands on:
 - **[spec-kit](https://github.com/github/spec-kit)** by GitHub — spec-driven development pattern
 - **[AI Dev Tasks](https://github.com/snarktank/ai-dev-tasks)** by snarktank — lean PRD + tasks pattern
 
-### Upstream contributions
+### Upstream strategy
 
-Where Flow needed a capability that didn't exist yet, we sent it upstream instead of forking:
+Flow's preference is to send features upstream rather than fork. When upstream is responsive, we contribute. When upstream is bandwidth-constrained, we maintain a **transparent temporary fork with an explicit deprecation plan**.
 
-- **[affaan-m/ECC#2006](https://github.com/affaan-m/ECC/pull/2006)** — `claude-project` install target (project-scope ECC). **Merged 2026-05-19.** Closes the install-target matrix for Claude Code and removes the need for `HOME=$PROJECT/...` shims.
-- **[JuliusBrussee/caveman#407](https://github.com/JuliusBrussee/caveman/pull/407)** — project-scope gating via marker files, env var, and allow/deny lists. *In review.*
+Active and historical contributions:
+
+- **[affaan-m/ECC#2006](https://github.com/affaan-m/ECC/pull/2006)** — `claude-project` install target (project-scope ECC). **Merged 2026-05-19.** Closes the install-target matrix for Claude Code and removes the need for `HOME=$PROJECT/...` shims. Same-day review and merge by maintainer.
+- **[JuliusBrussee/caveman#407](https://github.com/JuliusBrussee/caveman/pull/407)** — project-scope gating via marker files, env var, and allow/deny lists. *Filed 2026-05-19. Sitting in a ~134-PR backlog at ~5 merges/month, so Flow ships a **temporary fork** ([mhd-ghaith-abtah/caveman @ `flow-pin-v0.1`](https://github.com/mhd-ghaith-abtah/caveman/tree/flow-pin-v0.1)) with the patches applied. Catalog will swap back to upstream the day #407 merges.*
+
+This is the rule: **compose over reinvention, contribute when accepted, fork transparently with a swap-back plan when contribution is blocked.** Forks are documented in `catalog.yaml` with `upstream_repo` + `upstream_pr` + `fork_status` fields so the deprecation path is auditable.
 
 ## License
 
