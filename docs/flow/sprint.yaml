@@ -398,35 +398,37 @@ stories:
   - id: E5-005
     title: --repair-upstream <name> flag (reinstall pinned upstream version after drift)
     epic: E5
-    status: backlog
+    status: done
     tags: [cli, upstream-drift]
+    closed_in: post-v0.7-batch
     added_via: scope-review-2026-05-19
     promoted_from: deferred.md
-    notes: "Doctor probe surfaces drift; remediation is currently manual. Implement when first user hits drift in production."
+    notes: "flow doctor --repair-upstream <bmad|ecc|caveman> prints exact commands using the pinned version. Does NOT auto-run — upstream installers touch user-scope state and curl-pipe-bash should never be implicit."
 
   - id: E5-006
     title: CHANGELOG line-length CI enforcement
     epic: E5
-    status: backlog
+    status: done
     tags: [ci, process]
+    closed_in: post-v0.7-batch
     added_via: scope-review-2026-05-19
     promoted_from: deferred.md
-    notes: "CONTRIBUTING.md says \"one-line entries\". No enforcement. Add lint step to ci.yml that flags wrapped CHANGELOG entries."
+    notes: "tools/lint-changelog.js + new changelog-format CI job. Flags wrapped entries with line numbers. Honors fenced code blocks and indented continuation."
 
   - id: E5-009
     title: Wire /flow-sprint scope-review --apply-from <path>
     epic: E5
-    status: backlog
+    status: done
+    closed_via: strip-false-promise
+    closed_in: post-v0.7-batch
     tags: [flow-sprint, scope-review, parity]
     added_via: scope-review-2026-05-19
     discovered_during: dogfood-run
     notes: |
-      The scope-review workflow at skills/flow-sprint/workflow.md tells the user they
-      can defer apply via "/flow-sprint scope-review --apply-from <path>" — but no
-      such subcommand exists in the workflow's subcommand dispatch table. Either
-      (a) implement the apply-from path that reads a saved report and re-runs the
-      interactive walkthrough against current sprint.yaml, or (b) strip the false
-      promise from the workflow text. Surfaced during the 2026-05-19 dogfood run.
+      Chose option (b) — stripped the false promise from skills/flow-sprint/workflow.md.
+      Text now points users at "re-run /flow-sprint scope-review" same-day to resume
+      interactive apply. A dedicated --apply-from flag could land later if the
+      same-day-rerun pattern proves insufficient.
 
   - id: E5-007
     title: Multi-repo support for team profile

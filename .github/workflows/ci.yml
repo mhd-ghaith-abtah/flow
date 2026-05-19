@@ -88,3 +88,10 @@ jobs:
           else
             echo "No shippable files changed; CHANGELOG.md not required."
           fi
+
+  changelog-format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify CHANGELOG entries are one-line (E5-006)
+        run: node tools/lint-changelog.js CHANGELOG.md

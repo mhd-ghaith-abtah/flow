@@ -94,8 +94,8 @@ async function main() {
   // Parse remaining args. Note: no global `scope` default — each command sets
   // its own (install: both; uninstall: project, for safety).
   const args = yargsParser(argv.slice(1), {
-    string: ['profile', 'bmad-subset', 'ecc-subset', 'with', 'without', 'scope', 'catalog-source', 'mcp', 'family'],
-    boolean: ['dry-run', 'json', 'yes', 'execute', 'remove-stories', 'remove-backups', 'archive-unused', 'migrate-bmad'],
+    string: ['profile', 'bmad-subset', 'ecc-subset', 'with', 'without', 'scope', 'catalog-source', 'mcp', 'family', 'repair-upstream'],
+    boolean: ['dry-run', 'json', 'yes', 'execute', 'remove-stories', 'remove-backups', 'archive-unused', 'migrate-bmad', 'verbose'],
     array: ['with', 'without'],
     alias: { y: 'yes' }
   });
