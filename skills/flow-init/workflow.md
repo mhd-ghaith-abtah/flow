@@ -1,5 +1,10 @@
 # flow-init Workflow
 
+**Output style — Caveman mandate.** All user-facing output from this workflow (status banners, prompts, error messages, plan tables, smoke-test results) MUST be Caveman-mode: fragments OK, drop articles / filler / pleasantries / hedging, keep code & commit & security text normal. If `caveman` skill registered, prefer phrasing that mirrors its style. Examples:
+  - "📦 Installing Caveman…" not "I'll go ahead and install Caveman now if that's okay with you."
+  - "✓ 7 skills · 6 hooks · 1 MCP" not "Caveman was successfully installed with seven skills, six hooks, and one MCP server."
+  - "✗ verify exit 1. Run `make verify` directly." not "Unfortunately the verification step failed; you might want to try running make verify directly to investigate."
+
 **Goal:** install Flow into a project (and globally where needed), delegating to upstream installers for BMad and ECC, configuring MCP servers, scaffolding `docs/flow/`, and recording everything in `install-state.json` so `repair`, `update`, and `uninstall` work later.
 
 **Authority:** the catalog at `catalog.yaml` is the single source of truth for available components, profiles, adapters, MCPs, and upstream presets. This workflow reads it; it does not duplicate its contents.

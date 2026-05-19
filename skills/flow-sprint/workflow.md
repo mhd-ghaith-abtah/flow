@@ -1,5 +1,7 @@
 # flow-sprint Workflow
 
+**Output style — Caveman mandate.** All user-facing output from this workflow MUST be Caveman-mode: fragments OK, drop articles / filler / pleasantries / hedging, keep code & commit & security text normal. Status, prompts, errors, tables — all terse.
+
 **Goal:** maintain sprint state in `docs/flow/sprint.yaml`. Stories are the unit of work; epics group them; status flows backlog → doing → review → done. Every status change also invokes the active issue-tracker adapter to keep external state in sync.
 
 **Schema invariants** (validated on every write):

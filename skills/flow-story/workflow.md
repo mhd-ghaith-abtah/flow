@@ -1,5 +1,14 @@
 # flow-story Workflow
 
+**Output style — Caveman mandate.** All user-facing output from this workflow MUST be Caveman-mode: fragments OK, drop articles / filler / pleasantries / hedging, keep code & commit & security text normal. Status banners short. Errors short. Tables OK.
+
+**Caveman skill integration.** When Caveman is installed (catalog.upstreams.caveman.subset != none), this workflow routes three phases through Caveman skills:
+  - **commit-pr phase** → invoke `caveman:caveman-commit` skill instead of composing commit message inline (shorter conventional commits).
+  - **review phase** → after reviewer agents return, invoke `caveman:caveman-review` skill to compress findings into one-line-per-issue format before appending to story file's `## Review Notes`.
+  - **plan phase under --auto** → spawn `caveman:cavecrew` agent (run_in_background: true) instead of writing the static placeholder. cavecrew has no CONFIRM gate and returns Caveman-shaped Plan section. Falls back to placeholder if cavecrew unavailable.
+
+If Caveman is NOT installed (subset == none), fall back to the inline behavior described per-phase below.
+
 **Goal:** drive one story from its current phase to the next pause point. Default mode is **execute** — invoke the next command and chain phases automatically. Pause only at destructive boundaries (commit, PR) or blockers (CRITICAL review findings, verify failure, e2e failure).
 
 **Authority boundary:** this skill orchestrates ECC and adapter primitives. The actual code-writing, reviewing, and verifying happens in those — flow-story calls them.
@@ -140,17 +149,17 @@
          gate, so we don't invoke it. We auto-write a minimal Plan section derived
          from the story itself and let implement run directly. -->
     <check if="--auto OR --skip-plan">
-      <output>📐 plan → auto-skipped ({{ "--auto" if --auto else "--skip-plan" }}). Writing minimal Plan placeholder so implement can proceed.</output>
-      <action>Append a `## Plan` section to {{story_file}} with:
+      <check if="Caveman installed AND `caveman:cavecrew` skill registered AND --auto">
+        <output>📐 plan → cavecrew (caveman, no CONFIRM gate)…</output>
+        <action>Spawn `caveman:cavecrew` (or fall back to `cavecrew` flat name) as Agent with `run_in_background: true`. Prompt: "Emit Plan section for {{story.id}} — {{story.title}}. Inputs: story file at {{story_file}}, sibling pattern {{sibling.id}} ({{sibling.file}}), refs above. Output only the Plan markdown body (no preamble). Caveman style: fragments OK, drop filler." When agent returns, append its output as the `## Plan` section in {{story_file}}.</action>
+        <action>Re-detect phase. Continue. Do NOT end turn.</action>
+      </check>
+      <output>📐 plan → placeholder ({{ "--auto" if --auto else "--skip-plan" }}). prp-implement plans inline.</output>
+      <action>Append a `## Plan` section to {{story_file}}:
         ```
         ## Plan
 
-        Auto-skipped (--auto). Implementation derived from:
-        - ACs in this story file
-        - Sibling pattern: {{sibling.id}} — {{sibling.title}}
-        - Refs listed above
-
-        prp-implement will read the ACs + Files block + sibling code and produce the diff.
+        Auto-skipped. Derived from ACs + sibling {{sibling.id}} + refs. prp-implement reads ACs + Files block + sibling code → diff.
         ```
       </action>
       <action>Re-detect phase from Step 2 (should now be `implement`). Continue. Do NOT end turn.</action>
@@ -278,12 +287,23 @@
       <action>End turn.</action>
     </check>
 
-    <action>Append `## Review Notes` to {{story_file}} with LOW/MEDIUM findings, reviewer names, timestamps. Mark `{{review_done}} = true`. Continue to commit-pr.</action>
+    <check if="Caveman installed AND `caveman:caveman-review` skill registered">
+      <output>🪨 caveman-review → compressing findings to one-line-per-issue…</output>
+      <action>Invoke `caveman:caveman-review` skill via Skill tool with the aggregated findings as input. It returns compressed one-line-per-issue format. Use this compressed output for the `## Review Notes` block instead of the verbose original.</action>
+    </check>
+
+    <action>Append `## Review Notes` to {{story_file}} with LOW/MEDIUM findings (Caveman-compressed if available), reviewer names, timestamps. Mark `{{review_done}} = true`. Continue to commit-pr.</action>
   </check>
 
   <!-- ────────────────────── COMMIT-PR ────────────────────── -->
   <check if="phase == 'commit-pr'">
-    <action>Compose commit message: derive `type` from story.tags (ui→feat, fix→fix, chore→chore, default feat) and form `<type>: {{story.id}} — {{story.title}}`.</action>
+    <check if="Caveman installed AND `caveman:caveman-commit` skill registered">
+      <output>🪨 caveman-commit → composing message…</output>
+      <action>Invoke `caveman:caveman-commit` skill via Skill tool. Pass it: story.id, story.title, story.tags, list of changed files (from `git status --porcelain`), the story's `## Review Notes` summary. It returns a Caveman-shaped conventional commit message (short subject + tight body). Use that as `{{commit_msg}}`.</action>
+    </check>
+    <check if="Caveman NOT installed">
+      <action>Compose commit message inline: derive `type` from story.tags (ui→feat, fix→fix, chore→chore, default feat) and form `<type>: {{story.id}} — {{story.title}}`.</action>
+    </check>
 
     <action>Inventory what needs committing:
       - `{{has_uncommitted}}` files (from `git status --porcelain`) — the implementation
