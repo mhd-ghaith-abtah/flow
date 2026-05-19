@@ -156,6 +156,9 @@ Yes — it's intentionally team-shared (adapter choices, review policy, verify c
 **Where do I report bugs?**
 [github.com/mhd-ghaith-abtah/flow/issues](https://github.com/mhd-ghaith-abtah/flow/issues). Run `/flow-doctor` first — it surfaces known-bug patterns automatically.
 
+**What's the roadmap?**
+See [ROADMAP.md](ROADMAP.md). v0.7.x is stabilization, v0.8 is npx-first install + ECC project-scope, v0.9 is multi-agent (Codex / Cline / Cursor / 30+ others). Explicit out-of-scope list there too.
+
 ## Credits
 
 Flow stands on:

@@ -46,6 +46,39 @@ epics:
     title: LOW — Polish + release ergonomics
     description: Curl-pipe-bash, release process, CHANGELOG-per-push, post-publish testing, Caveman session slowdown, sprint.yaml regex, FAQ gap, adapter symlink edge.
 
+  - id: E6
+    title: npx-first install ceremony (v0.8)
+    description: |
+      Port `/flow-init`'s Q&A + upstream dispatch to Node CLI so Flow installs
+      via `npx -y @mhd-ghaith-abtah/flow init` without requiring Claude Code.
+      Slash-command path stays canonical for in-Claude-Code use.
+      See ROADMAP.md → v0.8.
+
+  - id: E7
+    title: ECC project-scope support (v0.8)
+    description: |
+      File upstream PR adding `claude-project` target adapter to ECC, then
+      wire Flow's catalog + `/flow-init` Q&A to honor project vs user scope
+      for ECC installs. Team-profile defaults to project scope.
+      See ROADMAP.md → v0.8.
+
+  - id: E8
+    title: Multi-agent support (v0.9, demand-gated)
+    description: |
+      Flow installs for Codex, Cline, Cursor, and 30+ other agents that
+      BMad / ECC / Caveman already support. Upstreams do the heavy lifting;
+      Flow needs to (a) pass per-agent flag, (b) install its own skills to
+      per-agent dirs. `/flow-story` orchestration stays Claude Code only
+      (separate deferred epic E8-MCP).
+      See ROADMAP.md → v0.9.
+
+  - id: E9
+    title: Beta soak → stable promotion (v0.7.x)
+    description: |
+      Soak v0.7.2-beta.0 for ≥7 days, cut clean v0.7.2 non-beta, promote
+      to npm `latest`. Track external bug reports.
+      See ROADMAP.md → v0.7.x.
+
   - id: E5
     title: CLI + release-hardening
     description: |
@@ -489,3 +522,208 @@ stories:
     closed_in: e73f4bb
     added_via: scope-review-2026-05-19
     notes: "Retroactive story. Shipped under CHANGELOG [0.7.0] Added (ci.yml smoke step) with no explicit story."
+
+  # ── E6 npx-first install ceremony (v0.8) ──────────────────────────────────
+  - id: E6-001
+    title: Port /flow-init Q&A flow to Node CLI (lib/init/{detect,questions,scaffold}.js)
+    epic: E6
+    status: backlog
+    tags: [cli, install, parity]
+    estimate: 1d
+    references:
+      - ROADMAP.md
+      - skills/flow-init/workflow.md
+
+  - id: E6-002
+    title: Port upstream installer dispatch (lib/init/upstreams/{bmad,ecc,caveman}.js)
+    epic: E6
+    status: backlog
+    tags: [cli, install, upstreams]
+    estimate: 0.5d
+    blocked_by: [E6-001]
+
+  - id: E6-003
+    title: Port MCP registration to CLI (lib/init/mcp.js)
+    epic: E6
+    status: backlog
+    tags: [cli, install, mcp]
+    estimate: 0.5d
+    blocked_by: [E6-001]
+
+  - id: E6-004
+    title: Port BMad migration to CLI (lib/init/migrate-bmad.js with backup + rollback)
+    epic: E6
+    status: backlog
+    tags: [cli, install, migration]
+    estimate: 0.5d
+    blocked_by: [E6-001]
+
+  - id: E6-005
+    title: Port flow-sprint subcommands to CLI (lib/commands/sprint/*)
+    epic: E6
+    status: backlog
+    tags: [cli, sprint, parity]
+    estimate: 1d
+    notes: |
+      Port: add, next, status, done, deferred, import-bmad, add-epic.
+      Stay slash-only: scope-review (LLM agent), retro narrative generation.
+
+  - id: E6-006
+    title: Tests + docs for E6 (test parity + README install section refresh)
+    epic: E6
+    status: backlog
+    tags: [tests, docs]
+    estimate: 0.5d
+    blocked_by: [E6-001, E6-002, E6-003, E6-004, E6-005]
+
+  # ── E7 ECC project-scope (v0.8) ───────────────────────────────────────────
+  - id: E7-001
+    title: Upstream PR — add claude-project target adapter to ECC
+    epic: E7
+    status: ready
+    tags: [upstream, ecc, scope]
+    estimate: 3h
+    references:
+      - "https://github.com/affaan-m/ECC"
+      - "scripts/lib/install-targets/claude-home.js (in ECC repo)"
+    notes: |
+      ECC already has 6 project-scope target adapters (cursor, antigravity,
+      gemini, codebuddy, joycode, zed). Mirror cursor-project.js pattern with
+      .claude/ root + ecc namespace. No breaking change — existing --target
+      claude continues to route to user-scope.
+
+  - id: E7-002
+    title: Flow catalog gains upstreams.ecc.install_scope (user|project)
+    epic: E7
+    status: backlog
+    tags: [catalog, scope]
+    estimate: 0.5d
+    blocked_by: [E7-001]
+    notes: "Default user for mini/standard; default project for team."
+
+  - id: E7-003
+    title: /flow-init + flow init honor the ECC scope flag
+    epic: E7
+    status: backlog
+    tags: [skill, cli, scope]
+    estimate: 0.5d
+    blocked_by: [E7-001, E7-002]
+
+  - id: E7-004
+    title: Doctor probe for ECC scope drift / collision (both scopes present)
+    epic: E7
+    status: backlog
+    tags: [doctor, scope, observability]
+    estimate: 0.5d
+    blocked_by: [E7-001]
+
+  - id: E7-005
+    title: Update README + docs/profiles.md with the new scope option
+    epic: E7
+    status: backlog
+    tags: [docs]
+    estimate: 0.5h
+    blocked_by: [E7-001]
+
+  # ── E8 Multi-agent support (v0.9, demand-gated) ───────────────────────────
+  - id: E8-001
+    title: Validate demand — 7-day window after v0.8 ships
+    epic: E8
+    status: gated
+    tags: [validation, gate]
+    notes: |
+      Don't build E8-002..008 until a user surfaces with a concrete
+      non-Claude-Code use case. Watch for "I don't use Claude Code" issues.
+
+  - id: E8-002
+    title: Add targets block to catalog.yaml (per-component agent matrix)
+    epic: E8
+    status: backlog
+    tags: [catalog, multi-agent]
+    estimate: 1d
+    blocked_by: [E8-001]
+    notes: "Mirror BMad's --tools pattern: each flow_component declares supported agents."
+
+  - id: E8-003
+    title: Per-agent install destination resolver in lib/init/scaffold.js
+    epic: E8
+    status: backlog
+    tags: [install, multi-agent]
+    estimate: 1d
+    blocked_by: [E8-002]
+
+  - id: E8-004
+    title: Multi-agent flag in /flow-init Q&A + flow init --target <agent>
+    epic: E8
+    status: backlog
+    tags: [skill, cli, multi-agent]
+    estimate: 1d
+    blocked_by: [E8-003]
+
+  - id: E8-005
+    title: Per-agent flag pass-through to upstream installers
+    epic: E8
+    status: backlog
+    tags: [install, upstreams, multi-agent]
+    estimate: 0.5d
+    blocked_by: [E8-004]
+    notes: "bmad --tools <agent>, ecc --target <agent>, caveman --only <agent>."
+
+  - id: E8-006
+    title: Per-agent MCP registration (extend lib/init/mcp.js)
+    epic: E8
+    status: backlog
+    tags: [mcp, multi-agent]
+    estimate: 0.5d
+    blocked_by: [E8-004]
+
+  - id: E8-007
+    title: Doctor probes per-agent (Flow skills present at right paths)
+    epic: E8
+    status: backlog
+    tags: [doctor, multi-agent]
+    estimate: 0.5d
+    blocked_by: [E8-003]
+
+  - id: E8-008
+    title: Tests + docs (supported agents matrix in README)
+    epic: E8
+    status: backlog
+    tags: [tests, docs]
+    estimate: 1d
+    blocked_by: [E8-002, E8-003, E8-004, E8-005, E8-006, E8-007]
+
+  # E8-MCP — deferred sub-epic for cross-agent /flow-story orchestration
+  - id: E8-MCP-001
+    title: Design @mhd-ghaith-abtah/flow-mcp tool boundaries
+    epic: E8
+    status: deferred
+    tags: [mcp, server, multi-agent]
+    notes: |
+      Only build if E8 ships AND users ask for /flow-story-equivalent on
+      Codex/Cursor. Strategic position: Flow ships an MCP server so any
+      MCP-compatible agent can drive Flow's story-lifecycle ops.
+
+  # ── E9 Beta soak (v0.7.x) ─────────────────────────────────────────────────
+  - id: E9-001
+    title: Soak v0.7.2-beta.0 on npm for ≥7 days
+    epic: E9
+    status: in-progress
+    tags: [release, soak]
+    notes: "Watch for install failures, doctor false-positives, regressions."
+
+  - id: E9-002
+    title: Cut v0.7.2 non-beta, npm publish to latest
+    epic: E9
+    status: backlog
+    tags: [release, publish]
+    blocked_by: [E9-001]
+    estimate: 30min
+
+  - id: E9-003
+    title: GitHub release notes for v0.7.2
+    epic: E9
+    status: backlog
+    tags: [release, docs]
+    blocked_by: [E9-002]
+    estimate: 15min

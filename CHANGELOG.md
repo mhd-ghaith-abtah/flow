@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - README Install section refreshed for the npm publish — now shows four paths (`/flow-init` slash command, `npm install -g @mhd-ghaith-abtah/flow@beta`, `npx -y @mhd-ghaith-abtah/flow@beta`, clone for development). Status block updated from "not yet published" to "published as beta, soaking before latest promotion".
 
+### Added
+- `ROADMAP.md` — multi-epic arc through v0.7.x (stabilize) → v0.8 (npx-first + ECC project-scope) → v0.9 (multi-agent) → v1.0 (stable). Explicit out-of-scope guardrails (no multi-repo orchestration, no SaaS, no LLM provider abstraction, etc.). Decision log appended as design calls land. Linked from README FAQ.
+- Sprint backlog gained 24 forward-looking stories under new epics E6 (npx-first install), E7 (ECC project-scope), E8 (multi-agent, demand-gated), E9 (beta soak). E7-001 (ECC upstream PR) is marked `ready` — next actionable item.
+
 ## [0.7.2-beta.0] — 2026-05-19
 
 ### Changed
