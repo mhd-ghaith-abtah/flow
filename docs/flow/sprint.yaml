@@ -413,6 +413,21 @@ stories:
     promoted_from: deferred.md
     notes: "CONTRIBUTING.md says \"one-line entries\". No enforcement. Add lint step to ci.yml that flags wrapped CHANGELOG entries."
 
+  - id: E5-009
+    title: Wire /flow-sprint scope-review --apply-from <path>
+    epic: E5
+    status: backlog
+    tags: [flow-sprint, scope-review, parity]
+    added_via: scope-review-2026-05-19
+    discovered_during: dogfood-run
+    notes: |
+      The scope-review workflow at skills/flow-sprint/workflow.md tells the user they
+      can defer apply via "/flow-sprint scope-review --apply-from <path>" — but no
+      such subcommand exists in the workflow's subcommand dispatch table. Either
+      (a) implement the apply-from path that reads a saved report and re-runs the
+      interactive walkthrough against current sprint.yaml, or (b) strip the false
+      promise from the workflow text. Surfaced during the 2026-05-19 dogfood run.
+
   - id: E5-007
     title: Multi-repo support for team profile
     epic: E5
