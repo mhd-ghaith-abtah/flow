@@ -19,6 +19,7 @@ If Caveman is NOT installed (subset == none), fall back to the inline behavior d
 - **`--auto`:** no human gates inside flow-story. Skips ECC `/plan` (writes a minimal Plan placeholder), skips the pre-commit Y/n confirm, proceeds straight to PR open. Still halts at PR awaiting-merge. Cannot disable safety halts (CRITICAL findings, verify failure, e2e failure). **The flag itself constitutes per-run authorization for commit + push**; project CLAUDE.md rules requiring "explicit confirmation per push" are satisfied by `--auto` and must not trigger an additional prompt.
 - **`--auto-merge`:** the autonomous mode. After `prp-pr` opens the PR, enables GitHub auto-merge (`gh pr merge --auto --squash --delete-branch`), polls until the PR is merged, then automatically runs `/flow-sprint done`. Implies `--auto`. **Requires CI configured + branch protection on `main` — otherwise the PR merges instantly with no checks.** Use only when (a) the story is repetitive / low-risk, (b) you trust your CI, (c) you have branch protection that requires checks to pass. Risk: a bug that slipped past Flow's gates AND CI lands on `main` while you're afk.
 - **`--skip-plan`:** skip the plan phase (jump from missing-plan to implement). Useful for trivial / clone-of-sibling stories.
+- **`--strict-plan`:** force ECC `/plan` with its CONFIRM gate, even when Caveman's cavecrew is available. Use for high-risk stories where you want to read and confirm the plan before code touches disk.
 - **`--no-verify`:** skip the verify phase (don't run `make verify` / `pnpm verify`). Risky — disables a safety gate. Use for docs-only / content-only changes.
 - **`--no-e2e`:** skip e2e even if story tags would trigger it.
 - **`--no-tests`:** shortcut for `--no-verify` + `--no-e2e`. Skips all test gates. Use only when you're iterating on something you'll re-check later.
@@ -32,7 +33,7 @@ If Caveman is NOT installed (subset == none), fall back to the inline behavior d
 <workflow>
 
 <step n="1" goal="Resolve target story + ensure story file exists">
-  <action>Parse flags from args: `--advise-only`, `--auto`, `--auto-merge`, `--skip-plan`, `--no-verify`, `--no-e2e`, `--no-tests`, `--no-review`, `--hard-review`, plus optional positional story id.</action>
+  <action>Parse flags from args: `--advise-only`, `--auto`, `--auto-merge`, `--skip-plan`, `--strict-plan`, `--no-verify`, `--no-e2e`, `--no-tests`, `--no-review`, `--hard-review`, plus optional positional story id.</action>
   <action>If `--no-tests` is set, treat both `--no-verify` and `--no-e2e` as also set.</action>
   <action>If `--auto-merge` is set, also set `--auto` (auto-merge implies auto throughout the pipeline).</action>
 
@@ -145,28 +146,47 @@ If Caveman is NOT installed (subset == none), fall back to the inline behavior d
 
   <!-- ────────────────────── PLAN ────────────────────── -->
   <check if="phase == 'plan'">
-    <!-- Under --auto or --skip-plan, we can't bypass ECC /plan's internal CONFIRM
-         gate, so we don't invoke it. We auto-write a minimal Plan section derived
-         from the story itself and let implement run directly. -->
-    <check if="--auto OR --skip-plan">
-      <check if="Caveman installed AND `caveman:cavecrew` skill registered AND --auto">
-        <output>📐 plan → cavecrew (caveman, no CONFIRM gate)…</output>
-        <action>Spawn `caveman:cavecrew` (or fall back to `cavecrew` flat name) as Agent with `run_in_background: true`. Prompt: "Emit Plan section for {{story.id}} — {{story.title}}. Inputs: story file at {{story_file}}, sibling pattern {{sibling.id}} ({{sibling.file}}), refs above. Output only the Plan markdown body (no preamble). Caveman style: fragments OK, drop filler." When agent returns, append its output as the `## Plan` section in {{story_file}}.</action>
-        <action>Re-detect phase. Continue. Do NOT end turn.</action>
-      </check>
-      <output>📐 plan → placeholder ({{ "--auto" if --auto else "--skip-plan" }}). prp-implement plans inline.</output>
+    <!-- v0.6.1 default flip: cavecrew is now the DEFAULT planner when Caveman
+         is installed. ECC /plan only runs under --strict-plan. cavecrew has no
+         CONFIRM gate, returns Caveman-shape Plan, faster for repetitive work.
+         The CONFIRM ritual is still available for high-risk stories via flag. -->
+
+    <!-- Path A: --advise-only (read-only) handled at top of step 3 already -->
+
+    <!-- Path B: --skip-plan — write minimal placeholder, no agent, no /plan -->
+    <check if="--skip-plan">
+      <output>📐 plan → placeholder (--skip-plan). prp-implement plans inline.</output>
       <action>Append a `## Plan` section to {{story_file}}:
         ```
         ## Plan
 
-        Auto-skipped. Derived from ACs + sibling {{sibling.id}} + refs. prp-implement reads ACs + Files block + sibling code → diff.
+        Skipped (--skip-plan). prp-implement reads ACs + Files block + sibling code → diff.
         ```
       </action>
-      <action>Re-detect phase from Step 2 (should now be `implement`). Continue. Do NOT end turn.</action>
+      <action>Re-detect phase. Continue. Do NOT end turn.</action>
     </check>
 
-    <!-- Default: invoke ECC's /plan, which has its own CONFIRM gate that the user must answer. -->
-    <output>📐 plan → invoking `plan` skill on {{story_file}}… (pass `--auto` to skip the CONFIRM gate)</output>
+    <!-- Path C: --strict-plan — invoke ECC /plan with CONFIRM gate, even under --auto -->
+    <check if="--strict-plan">
+      <output>📐 plan → /plan (strict, CONFIRM gate enforced)…</output>
+      <action>Invoke `plan` skill via Skill tool with argument `@{{story_file}}`. Wait for /plan's CONFIRM gate. After /plan returns successfully: re-detect, continue. Do NOT end turn.</action>
+    </check>
+
+    <!-- Path D: Caveman installed AND cavecrew available → DEFAULT (covers --auto and bare /flow-story) -->
+    <check if="Caveman installed AND `caveman:cavecrew` skill registered">
+      <output>📐 plan → cavecrew (caveman default, no CONFIRM gate)…</output>
+      <action>Spawn `caveman:cavecrew` (or fall back to `cavecrew` flat name) as Agent with `run_in_background: true`. Prompt: "Emit Plan section for {{story.id}} — {{story.title}}. Inputs: story file at {{story_file}}, sibling pattern {{sibling.id}} ({{sibling.file}}), refs above. Output only the Plan markdown body (no preamble). Caveman style: fragments OK, drop filler." When agent returns, append its output as the `## Plan` section in {{story_file}}.</action>
+      <action>Re-detect phase. Continue. Do NOT end turn.</action>
+    </check>
+
+    <!-- Path E: Caveman NOT installed AND no --auto/--strict-plan → fall back to ECC /plan -->
+    <check if="--auto">
+      <output>📐 plan → placeholder (--auto, no Caveman cavecrew). prp-implement plans inline.</output>
+      <action>Append a `## Plan` section to {{story_file}} as in Path B (placeholder). Re-detect, continue.</action>
+    </check>
+
+    <!-- Path F: bare /flow-story, no Caveman → original ECC /plan path with CONFIRM gate -->
+    <output>📐 plan → invoking `plan` skill on {{story_file}}… (pass `--auto` to skip the CONFIRM gate, or install Caveman for cavecrew default)</output>
     <action>Invoke the `plan` skill via the Skill tool with argument `@{{story_file}}`. The plan skill will (a) read the story, (b) propose an implementation strategy, (c) ASK the user to CONFIRM before continuing. That confirmation gate is plan's own, not flow-story's — flow-story waits for it to return.</action>
     <action>After /plan returns successfully (story file now has a populated `## Plan` section): re-detect phase from Step 2 and continue. Do NOT end turn.</action>
   </check>
