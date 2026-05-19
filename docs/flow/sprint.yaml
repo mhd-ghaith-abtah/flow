@@ -98,15 +98,24 @@ stories:
   - id: E1-002
     title: npm publish + post-publish smoke
     epic: E1
-    status: backlog
+    status: done
+    closed_in: v0.7.2-beta.0
     tags: [release, publish, smoke]
     merged:
       - E4-004
     references:
       - tools/release.sh
+      - "https://www.npmjs.com/package/@mhd-ghaith-abtah/flow"
     acceptance_criteria:
-      - "npm publish --access public from repo root"
-      - "npm install -g @mhd-ghaith-abtah/flow in clean env → flow plan --profile standard runs without error"
+      - "npm publish --access public from repo root ✓"
+      - "npm install -g @mhd-ghaith-abtah/flow in clean env → flow plan --profile standard runs without error ✓"
+    notes: |
+      Published as 0.7.2-beta.0 with --tag beta. Smoke clean end-to-end:
+      local install, global install, npx, all four profiles, doctor probe.
+
+      Note: npm auto-set latest=0.7.2-beta.0 because it was the first publish
+      (npm needs SOME latest tag). When v0.7.2 cuts non-beta, latest will move
+      and beta-0 will stay at 0.7.2-beta.0 for forensic comparison.
 
   - id: E1-003
     title: Bootstrap test suite + CI
