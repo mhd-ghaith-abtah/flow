@@ -20,13 +20,21 @@ Existing per-story workflows are token-heavy. BMad's create-story re-reads epics
 
 ## Install
 
-> **Status (v0.7.0):** the `npx` install path is not yet published to npm. The headless CLI (`node bin/flow.js plan / install / doctor / add / remove / uninstall`) is fully working from a clone. Slash commands are the recommended primary path. `npx @mhd-ghaith-abtah/flow init` lands once the package is published; tracked as E1-002 in `docs/flow/sprint.yaml`.
+> **Status (v0.7.2-beta.0, published 2026-05-19):** Flow is live on npm as a **beta channel**. Stable `latest` will be promoted from beta after a soak period. Expect minor breaking changes between beta releases until then.
 
 ```bash
-# Inside Claude Code (recommended)
+# Inside Claude Code (recommended for first install)
 /flow-init
 
-# Headless (works today against a clone — npm publish pending)
+# Headless from npm — beta channel
+npm install -g @mhd-ghaith-abtah/flow@beta
+flow plan --profile standard
+flow doctor
+
+# One-shot via npx (no install)
+npx -y @mhd-ghaith-abtah/flow@beta plan --profile standard
+
+# Or from a clone (for development / contributing)
 git clone https://github.com/mhd-ghaith-abtah/flow.git
 cd flow && npm install && tools/dev-link.sh
 flow plan --profile standard
