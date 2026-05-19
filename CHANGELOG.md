@@ -9,22 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.7.0] — 2026-05-19
 
 ### Added
-- `.github/workflows/ci.yml` — GitHub Actions CI on push + PR. Runs `npm test` + `node bin/flow.js plan` for all four profiles on Node 20 and 22, shellchecks `tools/`, and enforces the CHANGELOG-touched rule from CONTRIBUTING.md (fails the PR if shippable files change without a CHANGELOG entry). Closes the second half of #3.
+- `flow-doctor` skill — health check for catalog / state / adapters / MCPs / CLIs / upstreams + probes for known bugs (caveman-shrink standalone vs wrapper, stripped severity labels, loose `## Plan` markers, upstream version drift, Caveman global scope, adapter symlink drift). Supports `--fix` for safe auto-repairs. Closes #7.
+- `lib/catalog.js` + `lib/repo-root.js` + `lib/commands/plan.js` + `lib/commands/init.js` + `lib/commands/uninstall.js` — first real implementation of the `flow` CLI commands (replaces stub dispatch). `flow plan` resolves profiles with `extends:` inheritance and adapter family-override; `--json` emits machine-readable plan. `flow uninstall` defaults to `--scope project` (safe), dry-runs by default, requires `--execute --yes` to actually remove. Does NOT touch BMad / ECC / Caveman. Closes #1 (code path), #8.
+- `lib/catalog.test.js` — first test file. 7 tests pass under `npm test` (`node --test`). Closes second half of #3.
+- `.github/workflows/ci.yml` — GitHub Actions CI on push + PR. Matrix Node 20 + 22. Runs `npm test`, smoke-tests all four profiles, shellchecks `tools/`, enforces the CHANGELOG-touched rule from CONTRIBUTING.md. Closes second half of #3.
 - `.github/PULL_REQUEST_TEMPLATE.md` — PR checklist matching CONTRIBUTING.md.
 - `schemas/catalog.schema.json`, `schemas/install-state.schema.json`, `schemas/flow-config.schema.json` — JSON Schema (draft-07) for the three hand-editable surfaces. `loadCatalog` runs ajv validation when the schema is present; throws with grouped error messages on violation. New test asserts the shipped `catalog.yaml` passes its own schema. Closes #11.
-- `lib/commands/uninstall.js` — `flow uninstall` removal path. Defaults to `--scope project` (safe; only this project's `.claude/flow/` + `flow.config.yaml`). `--scope home` or `--scope both` for broader removal. Dry-run by default — requires `--execute --yes` to actually remove. Keeps `docs/flow/` (user content) unless `--remove-stories` is passed. Does NOT touch BMad / ECC / Caveman (they're owned by their own installers). Closes #8.
-- `tools/release.sh` — release-cutting script. Sanity-checks (clean tree, on main, up to date), runs tests + smoke, moves `[Unreleased]` block to dated heading, bumps `package.json`, commits + tags + pushes. Supports `patch | minor | major | <explicit-version>` plus `--dry-run` and `--no-push`. Closes #22.
-- Curl-pipe-bash inspection (when `FLOW_INSPECT_INSTALL_SCRIPTS=1`) now prints the downloaded script's SHA-256 alongside path + line count, so users can cross-check against a known-good hash before running. Closes #21.
-- `/flow-doctor` Caveman global-scope probe — detects when Caveman is active outside a Flow project (it activates in every Claude Code session by design upstream) and prints per-project gating recommendations. README FAQ entry documents the workaround until upstream Caveman adds native scope detection. Addresses #9 + #25 to the extent possible without modifying upstream Caveman.
-
-### Added
-- `flow-doctor` skill — health check for catalog / state / adapters / MCPs / CLIs / upstreams + probes for known bugs (caveman-shrink standalone vs wrapper, stripped severity labels, loose `## Plan` markers). Supports `--fix` for safe auto-repairs.
-- `lib/catalog.js` + `lib/commands/plan.js` + `lib/commands/init.js` — first real implementation of `flow plan` and `flow init` (replaces stub dispatch). `flow plan` resolves profiles with `extends:` inheritance and adapter family-override; `--json` emits machine-readable plan.
-- `lib/catalog.test.js` — first test file. 6 tests pass under `npm test` (`node --test`).
-- `CONTRIBUTING.md` — setup, branch conventions, CHANGELOG-on-every-PR rule, versioning + release flow, PR checklist.
-- README FAQ section — eight common questions (BMad vs ECC vs Flow, profile selection, Caveman, GitHub-free workflows, upgrade path, uninstall, config commit safety, bug reports).
-- README "When to use which command" precedence table — explicit mapping of BMad / Flow / ECC commands for each lifecycle phase, removing ambiguity when all three are installed side-by-side.
-- `docs/quickstart.md`, `docs/profiles.md`, `docs/adapters.md`, `docs/migrate-from-bmad.md` — first real documentation pass (was a known gap). Covers 10-min path to first shipped story, profile selection rationale, adapter contract + inventory, and BMad → Flow migration including rollback.
+- `tools/fix-caveman-shrink.sh` — print-only repair for the caveman-shrink standalone-vs-wrapper MCP registration bug. Does NOT auto-run `claude mcp` (modifying MCP registration affects every session). Closes #5.
+- `tools/release.sh` — release-cutting script. Sanity-checks (clean tree, on main, up to date), runs tests + smoke, moves `[Unreleased]` to dated heading, bumps `package.json`, commits + tags + pushes. Supports `patch | minor | major | <explicit-version>` + `--dry-run` + `--no-push`. Closes #22.
+- `CONTRIBUTING.md` — setup, branch conventions, CHANGELOG-on-every-PR rule, versioning + release flow, PR checklist. Closes #23.
+- `docs/quickstart.md`, `docs/profiles.md`, `docs/adapters.md`, `docs/migrate-from-bmad.md` — first real documentation pass. Covers 10-min path to first shipped story, profile selection rationale, adapter contract + inventory, BMad → Flow migration including rollback. Closes #17.
+- README FAQ section (8 questions: BMad/ECC/Flow split, profile selection, Caveman, GitHub-free workflows, upgrade, uninstall, config-commit safety, bug reports) + "When to use which command" precedence table (BMad / Flow / ECC mapping per lifecycle phase). Closes #20 + #27.
+- Curl-pipe-bash inspection (when `FLOW_INSPECT_INSTALL_SCRIPTS=1`) now prints the downloaded script's SHA-256 alongside path + line count. Closes #21.
 
 ### Changed
 - README: stripped premature `npx @mhd-ghaith-abtah/flow-init` claim; documented current state as slash-command only until v0.7 npm publish lands.
