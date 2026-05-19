@@ -177,6 +177,18 @@
     <action>Show open PRs (if `{{pr_adapter}}` != none): query GH for PRs matching `flow/*` branches.</action>
     <action>Show open deferred-work count (count non-resolved lines in `{{deferred_file}}`).</action>
 
+    <action>**Midpoint check.** Compute `{{progress_pct}}` = done / (total - cancelled). Read `{{midpoint_threshold}}` from flow.config.yaml > sprint.midpoint_threshold (default 0.5). Read `{{midpoint_review_offered}}` from sprint.yaml > metadata.midpoint_review_offered (default false).</action>
+
+    <check if="{{progress_pct}} >= {{midpoint_threshold}} AND NOT {{midpoint_review_offered}}">
+      <output>🎯 Midpoint reached ({{done}}/{{total}} = {{progress_pct}}%). Worth a scope check?
+
+      Open scope is a leading indicator of slip. A 5-min review now can save a lot at the back end.
+
+      Run: `/flow-sprint scope-review` (or `--report-only` for just the report, no prompts).
+      </output>
+      <action>Set `sprint.yaml > metadata.midpoint_review_offered = true` so this prompt doesn't repeat.</action>
+    </check>
+
     <output>📊 Sprint status
 
     {{ for each epic: }}
@@ -258,6 +270,82 @@
 
   <check if="subcommand == 'import-bmad'">
     <action>Same migration logic as flow-init step 11. Useful if user skipped migration at install time.</action>
+  </check>
+
+  <check if="subcommand == 'scope-review'">
+    <action>Parse optional flags: `--apply` (interactively apply suggestions), `--report-only` (write report, no prompts), `--threshold <pct>` (override 0.5 default for what counts as "midpoint"), `--include-prd` (also read PRD/architecture from reference_docs).</action>
+
+    <action>Gather inputs for the audit agent:
+      1. sprint.yaml — full epic + story list with status
+      2. All story files under `{{stories_dir}}` AND `{{archive_dir}}` (recent + done)
+      3. `{{deferred_file}}` — accumulated friction signals
+      4. `{{retros_dir}}/*.md` — completed-epic retros
+      5. Reference docs from `flow.config.yaml > reference_docs` — only if `--include-prd` (e.g. PRD, architecture, epics-stories.md from BMad)
+      6. Recent git history: `git log --oneline -50 main` for done-context
+    </action>
+
+    <action>Spawn a background agent (Agent tool, run_in_background: true) with:
+      - `subagent_type`: `general-purpose` (no specialized scope-audit agent in v0; could add later)
+      - `description`: "Scope review of {{project_name}}"
+      - `prompt`: a self-contained brief listing all inputs above and asking the agent to return a structured markdown report:
+
+        ```
+        # Scope Review — {{project_name}} — {{date}}
+
+        ## Progress snapshot
+        - {{done}}/{{total}} stories done ({{pct}}%)
+        - {{N}} stories in backlog / doing / review
+        - Time since first story: {{days}}
+        - Deferred items open: {{open_count}}
+
+        ## Proposed merges (overlapping stories)
+        For each: source story-ids, suggested merged id + title, rationale (1 line)
+
+        ## Proposed drops (no longer relevant / duplicates)
+        For each: story-id, rationale referencing PRD or deferred ledger or retro
+
+        ## Proposed splits (stories that grew too big)
+        For each: story-id, proposed split into N new stories
+
+        ## Proposed adds (gaps not covered)
+        For each: epic, suggested new story-id + title, rationale
+
+        ## Epics worth reconsidering
+        Either consolidate / drop / split entire epics. Include rationale.
+
+        ## Risks of NOT trimming
+        One paragraph on what happens if scope stays as-is.
+        ```
+
+        Output ONLY the report. No preamble, no closing remarks.
+    </action>
+
+    <action>While the agent runs (in background), continue:
+      1. Ensure `{{retros_dir}}/../scope-reviews/` exists (mkdir).
+      2. Reserve filename `docs/flow/scope-reviews/{{YYYY-MM-DD}}.md`.
+    </action>
+
+    <action>When the agent returns (notification): write its report to the reserved filename.</action>
+
+    <output>📋 Scope review report → docs/flow/scope-reviews/{{YYYY-MM-DD}}.md ({{N}} merges, {{M}} drops, {{K}} adds, {{L}} splits proposed).</output>
+
+    <check if="--apply OR (default behavior, NOT --report-only)">
+      <ask>Review suggestions interactively? [Y/n/later]</ask>
+      <check if="user picks Y">
+        <action>For each suggestion in the report (merge, drop, split, add) in that order:
+          1. Show the suggestion + rationale.
+          2. Ask `[a]pply / [s]kip / [m]odify / [q]uit`.
+          3. If apply: mutate sprint.yaml accordingly. For merges, combine stories under one id, archive the absorbed ones with a "merged into <X>" note. For drops, set status to `cancelled` with a `cancelled_reason`. For splits, replace one entry with N new entries. For adds, append new entries with status `backlog`.
+          4. If modify: collect user's edits to the proposed change, then apply.
+        </action>
+        <action>After all suggestions processed: write sprint.yaml, record `metadata.last_scope_review.applied_at` = today + summary counts.</action>
+      </check>
+      <check if="user picks later">
+        <action>Record `metadata.last_scope_review.report_pending` = true + filename. User can run `/flow-sprint scope-review --apply-from <path>` later.</action>
+      </check>
+    </check>
+
+    <action>Record in sprint.yaml `metadata.scope_reviews[]`: {date, suggested_counts, applied_counts, report_path}.</action>
   </check>
 
   <check if="subcommand not recognized">

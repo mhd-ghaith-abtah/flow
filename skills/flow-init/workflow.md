@@ -292,6 +292,32 @@
   </check>
 </step>
 
+<step n="11b" goal="Optional planning audit (post-migration)">
+  <!-- If the migration brought in a non-trivial number of stories, offer to
+       run a scope review immediately. Catches over-scoped epics-stories.md
+       early — before the user is committed to executing 40+ stories. -->
+  <check if="migrated_stories_count > 10">
+    <output>📋 Migrated {{migrated_stories_count}} stories across {{migrated_epics_count}} epics from BMad.
+
+    That's a lot of scope. Before you start executing, worth a 5-min scope review? It reads sprint.yaml + story files + PRD/architecture (if present in reference_docs) and proposes merges / drops / splits / adds.
+
+    Output: `docs/flow/scope-reviews/{{date}}.md` — review then apply interactively.
+    </output>
+    <ask>Run scope review now? [Y/n/later]
+      Y      → invoke `/flow-sprint scope-review --include-prd` immediately
+      n      → skip; you can still run it any time
+      later  → record a midpoint reminder so /flow-sprint status prompts you again at 50% done
+    </ask>
+
+    <check if="user picks Y">
+      <action>Invoke `flow-sprint` skill via Skill tool with arg `scope-review --include-prd`. The user will iterate through suggestions interactively per that skill's flow.</action>
+    </check>
+    <check if="user picks later">
+      <action>Set `docs/flow/sprint.yaml > metadata.scope_review_pending = true` (defaults the midpoint prompt to "high signal" so it surfaces more prominently when reached).</action>
+    </check>
+  </check>
+</step>
+
 <step n="12" goal="Persist state">
   <action>Write `{{home_state}}` to `{{home_scope_root}}/flow/install-state.json` (pretty JSON, schema version `flow.install.v1`).</action>
   <action>Write `{{project_state}}` to `{{project_scope_root}}/flow/install-state.json`.</action>
