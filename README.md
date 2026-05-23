@@ -23,24 +23,27 @@ Existing per-story workflows are token-heavy. BMad's create-story re-reads epics
 > **Status (v0.7.2-beta.0, published 2026-05-19):** Flow is live on npm as a **beta channel**. Stable `latest` will be promoted from beta after a soak period. Expect minor breaking changes between beta releases until then.
 
 ```bash
-# Inside Claude Code (recommended for first install)
+# Inside Claude Code (recommended for first install — interactive)
 /flow-init
 
-# Headless from npm — beta channel
+# Headless install via npm — beta channel (no Claude Code required)
 npm install -g @mhd-ghaith-abtah/flow@beta
-flow plan --profile standard
-flow doctor
+flow init --profile standard --yes              # chains detect → upstreams → MCPs → scaffold
+flow plan --profile standard                    # preview without executing
+flow doctor                                     # health check
 
-# One-shot via npx (no install)
-npx -y @mhd-ghaith-abtah/flow@beta plan --profile standard
+# One-shot via npx — no install
+npx -y @mhd-ghaith-abtah/flow@beta init --profile mini --yes
 
-# Or from a clone (for development / contributing)
+# Or from a clone (development / contributing)
 git clone https://github.com/mhd-ghaith-abtah/flow.git
 cd flow && npm install && tools/dev-link.sh
 flow plan --profile standard
 ```
 
-The slash-command path runs the same interactive installer. It detects your project shape, asks ~8 questions, then:
+Two paths, same end state. `/flow-init` is interactive — Claude Code drives the Q&A, error recovery, and multi-step ceremony. `flow init --yes` is headless — pre-populates every answer from the profile defaults so it runs end-to-end without prompts (override individual knobs via `--ecc-scope`, `--bmad-subset`, `--ecc-subset`). Both invoke the same upstream installers and scaffold the same files.
+
+The installer detects your project shape, then:
 - Installs Flow's four skills (`flow-init`, `flow-sprint`, `flow-story`, `flow-doctor`)
 - Optionally invokes `npx bmad-method install` with a curated module list
 - Optionally invokes ECC's `install.sh` with a curated profile

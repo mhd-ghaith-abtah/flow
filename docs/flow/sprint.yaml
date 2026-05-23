@@ -611,10 +611,20 @@ stories:
   - id: E6-006
     title: Tests + docs for E6 (test parity + README install section refresh)
     epic: E6
-    status: backlog
+    status: done
     tags: [tests, docs]
     estimate: 0.5d
-    blocked_by: [E6-001, E6-002, E6-003, E6-004, E6-005]
+    closed_in: ed1384b..HEAD
+    notes: |
+      Shipped 2026-05-23. lib/init/orchestrate.js + scaffold.js wire up
+      the headless `flow init --yes` path end-to-end. lib/commands/init.js
+      rewritten to route headless via orchestrator + nudge to /flow-init
+      otherwise. README install section refreshed with the new flow.
+      13 new tests (7 orchestrate + 6 scaffold). Orchestrate tests
+      kept dryRun=true to avoid 3+ minute network installs that earlier
+      hung the harness in 4 dead processes; scaffold tests run real
+      file writes since scaffold doesn't shell out.
+      Epic E6 closed — npx-first install is end-to-end runnable.
 
   # ── E7 ECC project-scope (v0.8) ───────────────────────────────────────────
   - id: E7-001
