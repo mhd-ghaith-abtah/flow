@@ -55,6 +55,8 @@ The installer detects your project shape, then:
 
 ## Quickstart
 
+> **Want every option in one place?** See the long-form [Usage Guide](docs/usage.md) — installation paths, daily workflow, sprint commands, profiles, ECC scope, maintenance, uninstall, full CLI reference, common scenarios (recipe book), and troubleshooting. The block below is the 30-second version.
+
 ```bash
 $ /flow-init                                              # one time per project
 $ /flow-sprint add "First story" --epic E1 --tags ui      # add a story
