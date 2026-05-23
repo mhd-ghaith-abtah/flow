@@ -581,10 +581,17 @@ stories:
   - id: E6-004
     title: Port BMad migration to CLI (lib/init/migrate-bmad.js with backup + rollback)
     epic: E6
-    status: backlog
+    status: done
     tags: [cli, install, migration]
     estimate: 0.5d
-    blocked_by: [E6-001]
+    closed_in: b9624ca..HEAD
+    notes: |
+      Shipped 2026-05-23. findBmadState / parseBmadStories /
+      parseBmadDeferred / backupBmadState / migrate / rollback.
+      Backup-first semantics; automatic rollback on parse or write
+      failure; pre-existing docs/flow/ survives rollback via sentinel
+      check. BMad status mapping (in-progress→doing etc.) with backlog
+      as the unknown-value fallback. 15 new tests, 122/122 total.
 
   - id: E6-005
     title: Port flow-sprint subcommands to CLI (lib/commands/sprint/*)
