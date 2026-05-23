@@ -553,10 +553,17 @@ stories:
   - id: E6-002
     title: Port upstream installer dispatch (lib/init/upstreams/{bmad,ecc,caveman}.js)
     epic: E6
-    status: backlog
+    status: done
     tags: [cli, install, upstreams]
     estimate: 0.5d
-    blocked_by: [E6-001]
+    closed_in: adf60f6..HEAD
+    notes: |
+      Shipped 2026-05-23. Three dispatcher modules + a shared common.js
+      (tokenizeCommand, firstExistingPath, runCommand, buildStateRecord).
+      Each exposes pure buildCommand(plan) + async install(plan, opts);
+      tested via 18 new tests using dry-run mode so no actual shelling.
+      Inspect-only path (FLOW_INSPECT_INSTALL_SCRIPTS=1) handled in
+      Caveman. ECC consumes the E7-003 target_by_scope routing.
 
   - id: E6-003
     title: Port MCP registration to CLI (lib/init/mcp.js)
