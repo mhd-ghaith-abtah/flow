@@ -1,6 +1,6 @@
 {
   "name": "@mhd-ghaith-abtah/flow",
-  "version": "0.8.0-beta.2",
+  "version": "0.8.0-beta.3",
   "description": "Token-light per-story workflow for Claude Code. Delegates to BMad + ECC.",
   "license": "MIT",
   "type": "module",

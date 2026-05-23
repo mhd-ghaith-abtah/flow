@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0-beta.3] — 2026-05-23
+
 ### Fixed
 - **`flow doctor` now finds `flow.config.yaml` at the canonical `.claude/flow.config.yaml` path** — surfaced by a real install into kaizenpro. Doctor was checking only the legacy root-level `flow.config.yaml` path while `scaffold()` writes to `.claude/flow.config.yaml`. Result: every fresh install reported `Config ℹ not present (run /flow-init)` even though the file was sitting right there, AND the entire Adapters section was suppressed (it depends on a parsed config). Fix: `probeConfig` checks `.claude/flow.config.yaml` first then falls back to the root path for backward compat. 3 new tests pin the behavior (canonical-found / legacy-fallback / canonical-wins-when-both-exist).
 - **`flow uninstall` now removes `.claude/flow.config.yaml`** — same root cause as the doctor bug. `PROJECT_PATHS` listed only the legacy root-level `flow.config.yaml`, leaving the actually-written canonical file in place after uninstall. Fix: PROJECT_PATHS extended with `.claude/flow.config.yaml` + `.claude/flow.config.local.yaml`; legacy root paths kept for backward compat with pre-`.claude/`-convention installs.
