@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **`--ecc-scope <user|project>` CLI flag** — explicit override on top of the profile default for `flow plan` and `flow install`. Lets users pick a non-default scope without authoring a new profile (e.g. `flow install --profile team --ecc-scope user` or `flow plan --profile mini --ecc-scope project`). Throws on invalid value so typos like `--ecc-scope=projet` fail loud instead of silently falling through to the profile default. 4 new tests covering override directions + typo guard.
 - **E7-002 — Catalog `ecc_install_scope` plumbing** — `upstreams.ecc.install_scope_default` (defaults to `user`) and per-profile `ecc_install_scope` (`user|project`) flow through `resolveProfile` so the resolved profile exposes the scope to downstream consumers. `team` profile now declares `ecc_install_scope: project`; `minimal`/`mini`/`standard` inherit `user`. `flow plan` surfaces the scope next to the ECC subset (e.g. `ECC:  flow-essentials-plus-tdd  (scope: project)`). Schema + JSDoc updated. Data plumbing only — E7-003 will consume the field to swap `--target claude` → `--target claude-project` at install time. 3 new tests (54/54 pass).
 
 ### Changed

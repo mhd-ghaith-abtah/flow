@@ -40,6 +40,7 @@ ${chalk.bold('Common flags:')}
   --profile <name>              mini | standard | team | minimal | full
   --bmad-subset <name>          none | planning-only | planning-plus-research | creative-thinking | test-architecture | full | passthrough
   --ecc-subset <name>           none | flow-essentials | flow-essentials-plus-tdd | security-heavy | research-heavy | use-ecc-default | passthrough
+  --ecc-scope <user|project>    Override the profile's ECC install scope (user = ~/.claude/, project = ./.claude/)
   --with <component>            Add a component on top of the profile
   --without <component>         Remove a component from the profile
   --scope home|project|both     Install scope (default: both)
@@ -93,7 +94,7 @@ async function main() {
   // Parse remaining args. Note: no global `scope` default — each command sets
   // its own (install: both; uninstall: project, for safety).
   const args = yargsParser(argv.slice(1), {
-    string: ['profile', 'bmad-subset', 'ecc-subset', 'with', 'without', 'scope', 'catalog-source', 'mcp', 'family', 'repair-upstream'],
+    string: ['profile', 'bmad-subset', 'ecc-subset', 'ecc-scope', 'with', 'without', 'scope', 'catalog-source', 'mcp', 'family', 'repair-upstream'],
     boolean: ['dry-run', 'json', 'yes', 'execute', 'remove-stories', 'remove-backups', 'archive-unused', 'migrate-bmad', 'verbose'],
     array: ['with', 'without'],
     alias: { y: 'yes' }
