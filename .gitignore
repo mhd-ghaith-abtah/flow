@@ -15,3 +15,15 @@ coverage/
 .vscode/
 *.tsbuildinfo
 .npm/
+
+# Upstream installer artifacts. If a test or local run shells out to
+# caveman/bmad/ecc against THIS repo as cwd, their installers dump files
+# here. Flow consumes those upstreams from ~/.claude/ globally; the
+# repo-local copies are accidents we never commit.
+.agents/
+skills-lock.json
+skills/caveman
+skills/caveman-*
+skills/cavecrew
+_bmad/
+docs/_bmad-output/
