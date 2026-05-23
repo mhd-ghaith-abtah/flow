@@ -645,10 +645,17 @@ stories:
   - id: E7-005
     title: Update README + docs/profiles.md with the new scope option
     epic: E7
-    status: backlog
+    status: done
     tags: [docs]
     estimate: 0.5h
-    blocked_by: [E7-001]
+    closed_in: 2941b74..HEAD
+    notes: |
+      Shipped 2026-05-20. README FAQ updated (stale "ships in v0.8" line
+      replaced with as-shipped behavior). docs/profiles.md gained ECC
+      scope column + per-profile scope line + dedicated "ECC install
+      scope" section explaining the 3-layer resolution (catalog default
+      → profile → --ecc-scope CLI override). Only E7-004 (collision
+      probe) remains in the E7 epic.
 
   # ── E8 Multi-agent support (v0.9, demand-gated) ───────────────────────────
   - id: E8-001
