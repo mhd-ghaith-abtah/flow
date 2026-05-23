@@ -126,7 +126,9 @@
     - Resolve profile inheritance (follow `extends:` chain in catalog)
     - Apply user's adapter overrides (Q2–Q5)
     - Resolve BMad delegation args (`{{bmad_cmd}}` = "npx bmad-method install" + base_args + module_arg + modules + config kvs)
-    - Resolve ECC delegation args (`{{ecc_cmd}}` = "<installer_path>" + base_args + profile_arg + profile + with/without lists)
+    - Resolve ECC scope: `{{ecc_install_scope}}` = profile's `ecc_install_scope` (resolved via catalog.yaml profile inheritance + the `upstreams.ecc.install_scope_default` fallback). If the user (or caller) supplies `--ecc-scope <user|project>`, override the profile value. `user` → `~/.claude/{rules,skills}/ecc`. `project` → `<projectRoot>/.claude/{rules,skills}/ecc`.
+    - Resolve ECC `--target` arg from the scope: `{{ecc_target}}` = `catalog.upstreams.ecc.installer.target_by_scope[{{ecc_install_scope}}]` (`claude` for user-scope, `claude-project` for project-scope).
+    - Resolve ECC delegation args (`{{ecc_cmd}}` = "<installer_path>" + `target_arg` + `{{ecc_target}}` + base_args + profile_arg + profile + with/without lists). When falling back to npm (no local installer), substitute `{{cmd_fallback}}` for `<installer_path>`. The fallback currently pins to `npx -y -p "github:affaan-m/ECC#98bd5174" ecc-install` because the merged `claude-project` target isn't yet in ECC's npm release (`ecc-universal@1.10.0` predates the merge by ~36 days).
     - Resolve MCPs to install (union of `mcps` referenced by selected adapters + profile's mcps list, minus those already in `{{existing_mcps}}`)
     - Resolve CLIs to install (any `needs_cli` for selected adapters not in `{{available_clis}}`)
     - Resolve Flow's own components (always: core:flow-skills, core:flow-templates, core:flow-state-store)
@@ -193,10 +195,11 @@
 
 <step n="8" goal="Execute — delegate to ECC if requested">
   <check if="{{plan.ecc_subset}} != none">
-    <action>Resolve `{{ecc_installer_path}}` from catalog.upstreams.ecc.detect.installer_path_candidates. If none found, fall back to `npx @everything-claude-code/ecc install`.</action>
+    <action>Resolve `{{ecc_installer_path}}` from `catalog.upstreams.ecc.detect.installer_path_candidates`. If none found, fall back to `catalog.upstreams.ecc.installer.cmd_fallback` (currently `npx -y -p "github:affaan-m/ECC#98bd5174" ecc-install` — pinned to the post-merge commit until ECC publishes 2.x to npm; pre-existing `@everything-claude-code/ecc` reference was a 404).</action>
+    <action>Build `{{ecc_cmd}}` = `<installer_path or fallback>` + `target_arg` + `target_by_scope[{{ecc_install_scope}}]` + `base_args` + `profile_arg` + `{{ecc_profile}}` + with/without lists. Concretely: user-scope → `--target claude`, project-scope → `--target claude-project`. The scope is the resolved value from step "Compute plan" (profile default + optional `--ecc-scope` override).</action>
     <action>Run `{{ecc_cmd}}` via execa (stream live). Capture exit code.</action>
-    <action>**Pin upstream version** (issue #12). After install: read `~/.claude/rules/VERSION` (path from `catalog.upstreams.ecc.detect.version_path`). If absent, fall back to `git -C ~/.claude/rules log -1 --format=%H 2>/dev/null` or `"unknown@{{date}}"`.</action>
-    <action>Record in `{{home_state}}.upstreams.ecc`: { subset, profile, exit_code, ran_at, version: <pinned-version> }</action>
+    <action>**Pin upstream version** (issue #12). After install: read `~/.claude/rules/VERSION` for user-scope, OR `<projectRoot>/.claude/rules/VERSION` for project-scope (path is `catalog.upstreams.ecc.detect.version_path` resolved against the scope's install root). If absent, fall back to `git -C <rules-dir> log -1 --format=%H 2>/dev/null` or `"unknown@{{date}}"`.</action>
+    <action>Record in `{{home_state}}.upstreams.ecc`: { subset, profile, install_scope: {{ecc_install_scope}}, target: {{ecc_target}}, exit_code, ran_at, version: <pinned-version> }.</action>
   </check>
 </step>
 

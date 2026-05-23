@@ -256,7 +256,14 @@ upstreams:
     installer:
       cmd: "{installer_path}"
       cmd_fallback: "npx -y -p \"github:affaan-m/ECC#98bd5174\" ecc-install"
-      base_args: "--target claude"
+      # base_args is scope-agnostic now. Callers must prepend the
+      # `--target <id>` flag chosen via `target_by_scope[ecc_install_scope]`.
+      # Kept empty so a future shared arg (e.g. --yes) has somewhere to live.
+      base_args: ""
+      target_arg: "--target"
+      target_by_scope:
+        user: claude            # ~/.claude/{rules,skills}/ecc
+        project: claude-project # <projectRoot>/.claude/{rules,skills}/ecc
       profile_arg: "--profile"
       with_arg: "--with"
       without_arg: "--without"

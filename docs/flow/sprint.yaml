@@ -620,10 +620,19 @@ stories:
   - id: E7-003
     title: /flow-init + flow init honor the ECC scope flag
     epic: E7
-    status: backlog
+    status: done
     tags: [skill, cli, scope]
     estimate: 0.5d
-    blocked_by: [E7-001, E7-002]
+    closed_in: efd1fe2..HEAD
+    notes: |
+      Shipped 2026-05-20. Catalog gained target_arg + target_by_scope
+      (user→claude, project→claude-project). base_args scope-agnostic.
+      Workflow.md composes the install command + records install_scope
+      in state. doctor --repair-upstream ecc now routes by recorded scope.
+      Also fixed pre-existing @everything-claude-code/ecc 404 in doctor
+      repair output. The npx-first `flow init` Node path is E6-001 still,
+      so the CLI consumer for ECC scope arrives with E6. For the Claude
+      Code path (the only currently-shipping path), E7-003 is complete.
 
   - id: E7-004
     title: Doctor probe for ECC scope drift / collision (both scopes present)
