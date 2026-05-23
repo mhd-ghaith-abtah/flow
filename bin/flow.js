@@ -96,7 +96,7 @@ async function main() {
   // its own (install: both; uninstall: project, for safety).
   const args = yargsParser(argv.slice(1), {
     string: ['profile', 'bmad-subset', 'ecc-subset', 'ecc-scope', 'with', 'without', 'scope', 'catalog-source', 'mcp', 'family', 'repair-upstream', 'id', 'title', 'epic', 'tags', 'why', 'issue', 'note', 'project', 'status'],
-    boolean: ['dry-run', 'json', 'yes', 'execute', 'remove-stories', 'remove-backups', 'archive-unused', 'migrate-bmad', 'verbose', 'force', 'continue-on-error'],
+    boolean: ['dry-run', 'json', 'yes', 'execute', 'remove-stories', 'remove-backups', 'archive-unused', 'migrate-bmad', 'verbose', 'force', 'continue-on-error', 'repair', 'update'],
     array: ['with', 'without'],
     alias: { y: 'yes' }
   });
