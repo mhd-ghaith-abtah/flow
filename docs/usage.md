@@ -34,51 +34,73 @@ This is the long-form reference. For the 10-minute first-install path, see [quic
 
 Flow ships in two surfaces: a Claude Code skill bundle (interactive) and a Node CLI (`flow`, headless). Both invoke the same underlying installers and write the same files.
 
-**Bootstrap order matters.** Claude Code discovers slash commands by scanning `~/.claude/skills/<name>/`. The npm package puts skill files in the install location (typically `~/.npm-global/lib/node_modules/...`), NOT in `~/.claude/skills/`. So `/flow-init` does NOT work after a bare `npm install -g`. You need to run `flow install-skills` once to symlink the four skills into Claude Code's discovery path.
+**Bootstrap order matters.** Claude Code discovers slash commands by scanning `~/.claude/skills/<name>/` (home scope) or `<project>/.claude/skills/<name>/` (project scope). The npm package puts skill files in the install location (typically `/opt/homebrew/lib/node_modules/...` on macOS Homebrew node, or `~/.npm-global/lib/node_modules/...` on other setups), NOT in any of Claude Code's discovery paths. You need to run `flow install-skills` once to symlink the four skills into a discovery path.
 
-### a. From npm (recommended)
+### a. Recommended: `npm install -g` + `flow install-skills --scope project` (per project)
+
+This is the right shape if you want **reliable slash commands** in one or more projects without polluting Claude Code's global skill set.
 
 ```bash
-# 1. Install the Node CLI
+# 1. Once on your machine — installs the `flow` CLI + provides a stable symlink target
 npm install -g @mhd-ghaith-abtah/flow@beta
-flow --version
+flow --version                                  # → 0.8.0-beta.2 (or newer)
 
-# 2. Bootstrap Claude Code surface (links 4 skills into ~/.claude/skills/)
-flow install-skills
+# 2. Per project — symlink the four skills into the project's .claude/skills/
+cd /path/to/project
+flow install-skills --scope project --force
 
-# 3. Now both paths work — pick one per project:
-flow init --profile mini --yes              # headless
-# OR, inside Claude Code:
-/flow-init                                  # interactive
+# 3. Pick your install path
+flow init --profile mini --yes                  # headless
+# OR, inside Claude Code opened in this project:
+/flow-init                                      # interactive
 ```
 
-`flow install-skills` is idempotent — re-run safely after every upgrade to refresh the symlinks. It refuses to clobber existing real directories at the target without `--force`.
+Why this combination is the best default for slash commands:
 
-### b. install-skills scope flag
+- The symlinks point at `/opt/homebrew/lib/node_modules/@mhd-ghaith-abtah/flow/skills/...` — a stable path that persists until you `npm uninstall`. **Never breaks** under normal use.
+- Project-scope means `/flow-*` only resolves when Claude Code is opened inside the project. No skill pollution in unrelated projects.
+- One `npm install -g` covers any number of projects — install-skills per project is the only per-project bootstrap step.
+- Upgrading Flow (`npm install -g @mhd-ghaith-abtah/flow@beta` again later) automatically refreshes every project's symlinks. No re-bootstrap needed.
 
-By default `flow install-skills` writes to `~/.claude/skills/` (home scope). Override:
+### b. Variant: `npm install -g` + `flow install-skills` (user-wide)
+
+If you'd rather have slash commands available **everywhere** on your machine instead of per-project:
 
 ```bash
-flow install-skills                            # default: --scope home
-flow install-skills --scope home               # user-wide ~/.claude/skills/
-flow install-skills --scope project            # team-commit: <cwd>/.claude/skills/
-flow install-skills --scope both               # both
-flow install-skills --dry-run                  # preview
-flow install-skills --force                    # replace existing real dirs
+npm install -g @mhd-ghaith-abtah/flow@beta
+flow install-skills                             # default scope: home (~/.claude/skills/)
 ```
 
-The `--scope project` mode is for teams that want every contributor to get Flow's slash commands the moment they `git clone` the repo — commit `<project>/.claude/skills/flow-*` so Claude Code picks them up automatically when the session is opened inside the project. The user still needs the npm package installed because the symlinks point at it.
+Now `/flow-init` resolves in every Claude Code session. Re-run `flow install-skills` after each `npm install -g` upgrade.
 
-### c. `npx` — no install
+### c. install-skills scope flag
 
 ```bash
-npx -y @mhd-ghaith-abtah/flow@beta install-skills     # one-time bootstrap
+flow install-skills                             # default: --scope home
+flow install-skills --scope home                # user-wide ~/.claude/skills/
+flow install-skills --scope project             # team-commit: <cwd>/.claude/skills/
+flow install-skills --scope both                # both
+flow install-skills --dry-run                   # preview
+flow install-skills --force                     # replace existing real dirs
+```
+
+`--scope project` is the team-commit pattern. Commit `<project>/.claude/skills/flow-*` so any contributor cloning the repo gets the slash commands automatically once they `npm install -g @mhd-ghaith-abtah/flow@beta` on their own machine. The symlinks point at each contributor's local npm install location, so the path is per-machine; what's committed is the four symlink files themselves.
+
+### d. `npx` — no install, but with a caveat
+
+```bash
+npx -y @mhd-ghaith-abtah/flow@beta install-skills --scope project --force
 npx -y @mhd-ghaith-abtah/flow@beta init --profile mini --yes
 ```
 
-`npx` works but the symlink targets the npx cache path, which can disappear when the cache rotates. For ongoing use, prefer `npm install -g`.
+Works for an immediate session, BUT the symlinks point at the npx cache (`~/.npm/_npx/<hash>/node_modules/...`), which npm rotates over time. When the cache entry is purged, the symlinks become broken pointers and `/flow-init` stops resolving with no error. Two ways to handle this:
 
-### d. Development clone
+- **Re-run `npx ... install-skills --scope project --force` before each session that needs slash commands.** Refreshes the symlinks against whatever the current npx cache hash is. Easy to forget.
+- **Or just use path (a) — single `npm install -g` + per-project `flow install-skills`.** Stable symlinks, slash commands always resolve.
+
+`npx` is fine for one-shot use (`flow plan`, `flow doctor`, one-off `flow init`), but for ongoing slash-command access prefer the npm-install-g path.
+
+### e. Development clone (contributors)
 
 ```bash
 git clone https://github.com/mhd-ghaith-abtah/flow.git
@@ -86,8 +108,6 @@ cd flow && npm install && tools/dev-link.sh
 ```
 
 `tools/dev-link.sh` is the dev-mode equivalent of `flow install-skills --scope home` — symlinks the four `skills/flow-*` dirs into `~/.claude/skills/` AND puts `flow` on `$PATH` from your clone. Use when you're contributing so changes to skill workflows take effect immediately.
-
-`tools/dev-link.sh` symlinks your clone into `$HOME/.claude/skills/flow-*` and onto `$PATH` as `flow`. Use when you're contributing.
 
 ### e. Verifying the install
 

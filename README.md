@@ -20,18 +20,21 @@ Existing per-story workflows are token-heavy. BMad's create-story re-reads epics
 
 ## Install
 
-> **Status (v0.7.2-beta.0, published 2026-05-19):** Flow is live on npm as a **beta channel**. Stable `latest` will be promoted from beta after a soak period. Expect minor breaking changes between beta releases until then.
+> **Status (v0.8.0-beta.2, published 2026-05-23):** Flow is live on npm via the `@beta` dist-tag. `@latest` still points at the older `0.7.2-beta.0` and gets promoted from `@beta` after a soak window with no critical issues. Pin to `@beta` for the new headless install + project-scope ECC + bug fixes.
 
 ```bash
-# 1. Install the Node CLI + bootstrap the Claude Code surface
+# 1. Install the Node CLI (once per machine)
 npm install -g @mhd-ghaith-abtah/flow@beta
-flow install-skills                             # one-time; symlinks 4 skills into ~/.claude/skills/
+flow --version                                  # → 0.8.0-beta.2
 
-# 2. Then EITHER (interactive):
-/flow-init                                      # inside Claude Code
+# 2. Per project — symlink the 4 skills into THIS project's .claude/skills/
+cd /path/to/project
+flow install-skills --scope project --force     # ← recommended scope for slash commands
 
-# OR (headless, no Claude Code needed):
-flow init --profile standard --yes              # chains detect → upstreams → MCPs → scaffold
+# 3. Pick an install path:
+flow init --profile standard --yes              # headless: detect → upstreams → MCPs → scaffold
+# OR, inside Claude Code opened in this project:
+/flow-init                                      # interactive
 
 # Useful at any point:
 flow plan --profile standard                    # preview without executing
@@ -42,7 +45,12 @@ git clone https://github.com/mhd-ghaith-abtah/flow.git
 cd flow && npm install && tools/dev-link.sh     # dev-mode equivalent of install-skills + PATH link
 ```
 
-The `flow install-skills` step is what makes `/flow-init` resolve in Claude Code — npm puts the package in your global node_modules, but Claude Code only scans `~/.claude/skills/`. After install-skills, both paths (interactive slash or headless CLI) reach the same orchestrator and write the same files. Override individual knobs via `--ecc-scope`, `--bmad-subset`, `--ecc-subset`. Full guide: [docs/usage.md](docs/usage.md).
+The `flow install-skills --scope project` step is what makes `/flow-init` resolve in Claude Code when opened inside the project. Two reasons project scope is the recommended default:
+
+1. **Reliable symlinks.** They point at the stable `/opt/homebrew/lib/node_modules/...` path (or your equivalent npm prefix), so they don't break the way `npx`-based symlinks do when the npx cache rotates.
+2. **No skill pollution elsewhere.** Slash commands only resolve inside this project, not in every Claude Code session you ever open.
+
+If you'd rather have `/flow-*` available globally on your machine, swap step 2 for `flow install-skills` (no `--scope` flag — defaults to `home` / `~/.claude/skills/`). For `npx`-only / no-global-install setups, see [docs/usage.md §1d](docs/usage.md#d-npx--no-install-but-with-a-caveat) — works but requires re-linking before each session. Full guide: [docs/usage.md](docs/usage.md).
 
 The installer detects your project shape, then:
 - Installs Flow's four skills (`flow-init`, `flow-sprint`, `flow-story`, `flow-doctor`)

@@ -11,20 +11,28 @@ A 10-minute path from zero to first shipped story.
 ## Install
 
 ```bash
-# 1. Install the Node CLI
+# 1. Install the Node CLI (once per machine)
 npm install -g @mhd-ghaith-abtah/flow@beta
-flow --version                                # → 0.8.0-beta.1 (or newer)
+flow --version                                # → 0.8.0-beta.2 (or newer)
 
-# 2. Bootstrap Claude Code's slash command discovery
-flow install-skills                           # symlinks 4 skills into ~/.claude/skills/
+# 2. Per project — symlink the 4 skills into THIS project's .claude/skills/
+cd /path/to/your/project
+flow install-skills --scope project --force   # ← recommended for slash commands
 
-# 3. Pick a path per project:
+# 3. Pick a path:
 flow init --profile mini --yes                # headless (no Claude Code needed)
-# OR, inside Claude Code:
+# OR, inside Claude Code opened in this project:
 /flow-init                                    # interactive Q&A
 ```
 
-`flow install-skills` is the bridge — npm puts Flow in `~/.npm-global/lib/node_modules/...` but Claude Code only scans `~/.claude/skills/<name>/`. Without that step, `/flow-init` won't resolve. Re-run after every Flow upgrade to refresh the symlinks (idempotent).
+`flow install-skills --scope project` is the bridge — npm puts Flow in `/opt/homebrew/lib/node_modules/...` but Claude Code only resolves slash commands from a scanned path (`~/.claude/skills/` for home scope, `<project>/.claude/skills/` for project scope). Per-project scope is the recommended default because:
+
+- Symlinks point at a stable path that survives until you `npm uninstall`
+- Slash commands only appear inside this project, not in every unrelated Claude Code session
+
+Re-run `flow install-skills --scope project --force` after every Flow upgrade (`npm install -g @mhd-ghaith-abtah/flow@beta`) to refresh the symlinks. It's idempotent.
+
+If you'd rather have `/flow-*` available globally on your machine instead of per-project, omit the `--scope` flag — `flow install-skills` defaults to `home` scope (`~/.claude/skills/`). See [usage.md §1](usage.md#1-installation-paths) for the full breakdown.
 
 ## What the installer does
 

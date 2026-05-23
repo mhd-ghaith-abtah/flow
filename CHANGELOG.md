@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Docs now recommend `npm install -g` + `flow install-skills --scope project` as the canonical slash-command setup** — surfaced by dogfooding the `npx`-only path into kaizenpro. The pure-npx flow produces symlinks pointing at `~/.npm/_npx/<hash>/node_modules/...` which npm rotates over time; when the cache entry is purged, slash commands silently stop resolving with no error. Single `npm install -g` provides a stable symlink target at `/opt/homebrew/lib/node_modules/...` that survives until `npm uninstall`. README install section + `docs/quickstart.md` + `docs/usage.md §1` all rewritten to lead with the project-scope pattern and demote pure-npx to a "works but with caveats" section (§1d). Rationale: project-scope keeps slash commands out of unrelated Claude Code sessions; stable symlinks mean no broken-pointer debugging when the npx cache rotates. `npx -y ... install-skills --scope project` still works for one-off use, just less durable.
+
 ## [0.8.0-beta.2] — 2026-05-23
 
 ### Fixed
