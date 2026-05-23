@@ -607,11 +607,15 @@ stories:
   - id: E7-002
     title: Flow catalog gains upstreams.ecc.install_scope (user|project)
     epic: E7
-    status: backlog
+    status: done
     tags: [catalog, scope]
     estimate: 0.5d
-    blocked_by: [E7-001]
-    notes: "Default user for mini/standard; default project for team."
+    closed_in: 2bd13d0..HEAD
+    notes: |
+      Shipped 2026-05-20. Catalog gained `upstreams.ecc.install_scope_default`
+      (defaults to user) + per-profile `ecc_install_scope` override.
+      `team` → project; minimal/mini/standard inherit user. flow plan
+      surfaces the scope. Data plumbing only — E7-003 will consume.
 
   - id: E7-003
     title: /flow-init + flow init honor the ECC scope flag

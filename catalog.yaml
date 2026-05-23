@@ -232,6 +232,14 @@ upstreams:
     # target until affaan-m cuts the next release (2.0.0).
     # SWAP PLAN: when ecc-universal@2.x lands on npm, switch
     # `cmd_fallback` to `npx ecc-universal install` and pin a version.
+    # install_scope_default — where ECC lands when a profile doesn't override:
+    #   - "user"    → ~/.claude/rules/ecc + ~/.claude/skills/ecc (legacy default)
+    #   - "project" → <projectRoot>/.claude/rules/ecc + .../skills/ecc
+    # Per-profile override lives at profiles.<name>.ecc_install_scope.
+    # E7-003 will wire this into base_args so --target swaps to
+    # claude-project when scope == "project". Today's E7-002 only plumbs
+    # the data through profile resolution.
+    install_scope_default: "user"
     repo: "https://github.com/affaan-m/ECC"
     upstream_npm_package: "ecc-universal"
     upstream_npm_latest: "1.10.0"
@@ -386,6 +394,10 @@ profiles:
     bmad_subset: full
     ecc_subset: flow-essentials-plus-tdd
     caveman_subset: full
+    # team-profile default: ECC lands per-project so each Flow-managed repo
+    # gets its own ECC selection without contaminating ~/.claude/. Becomes
+    # active once E7-003 wires the scope flag into the install command.
+    ecc_install_scope: project
     # Note: review.use_separate_model is set to true in the generated
     # flow.config.yaml for this profile (spawns one reviewer with a different
     # model for fresh perspective). The previous `features` block here
