@@ -535,12 +535,20 @@ stories:
   - id: E6-001
     title: Port /flow-init Q&A flow to Node CLI (lib/init/{detect,questions,scaffold}.js)
     epic: E6
-    status: backlog
+    status: done
     tags: [cli, install, parity]
     estimate: 1d
+    closed_in: 15df332..HEAD
     references:
       - ROADMAP.md
       - skills/flow-init/workflow.md
+    notes: |
+      Shipped 2026-05-23. lib/init/detect.js, recommendation.js,
+      questions.js. 19 new tests (81/81 total). scaffold.js (the actual
+      file scaffolding step from workflow.md step 10) deferred to a
+      follow-up — it depends on the orchestrator wiring which arrives
+      with E6-006. Detect + questions are the primitives; consumers in
+      E6-002 → E6-005 will pull them together into a runnable command.
 
   - id: E6-002
     title: Port upstream installer dispatch (lib/init/upstreams/{bmad,ecc,caveman}.js)
