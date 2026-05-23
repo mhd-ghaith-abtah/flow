@@ -55,6 +55,7 @@ What you actually need on your machine to develop Flow:
 - Reference an existing sprint.yaml story id (`E3-007a`) in the PR title or body if your work maps to one
 - Caveman style is fine in commit bodies and PR descriptions; code itself stays normal English
 - Surface scope creep — if your PR grew past the original intent, say so in the description rather than hiding it
+- **No version promises without a story id.** Any "in v0.X", "coming soon", "planned for", "will land in" copy in README / docs / CLI help / catalog needs a matching `sprint.yaml` story id with status `ready` or `in_progress`. Otherwise default to "unscheduled — PRs welcome" or "lands when demand surfaces". Aspirational copy creates obligations to either ship or strip; ROADMAP principle #2 ("strip aspirational marketing before adding features") only works as a write-time discipline. The 2026-05-20 audit pass cleaned ~10 stale promises that nobody had committed to keep.
 
 ## Setup
 
