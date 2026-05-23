@@ -787,22 +787,58 @@ stories:
   - id: E9-001
     title: Soak v0.7.2-beta.0 on npm for ≥7 days
     epic: E9
-    status: in-progress
-    tags: [release, soak]
-    notes: "Watch for install failures, doctor false-positives, regressions."
+    status: cancelled
+    cancelled_reason: |
+      Superseded 2026-05-23 by E9-004 (soak 0.8.0-beta.0). The 0.7.2-beta.0
+      soak window had nothing to discover after E6 + E7 shipped today and
+      were published as 0.8.0-beta.0. 0.7.2-beta.0 stable was never going
+      to ship; jumping to 0.8.x is the cleaner version arc.
+    tags: [release, soak, superseded]
 
   - id: E9-002
     title: Cut v0.7.2 non-beta, npm publish to latest
     epic: E9
-    status: backlog
-    tags: [release, publish]
-    blocked_by: [E9-001]
-    estimate: 30min
+    status: cancelled
+    cancelled_reason: "0.7.2 stable never ships; we jumped to 0.8.x. See E9-005."
+    tags: [release, publish, superseded]
 
   - id: E9-003
     title: GitHub release notes for v0.7.2
     epic: E9
+    status: cancelled
+    cancelled_reason: "v0.8.0-beta.0 release notes shipped instead (d07346d)."
+    tags: [release, docs, superseded]
+
+  - id: E9-004
+    title: Soak v0.8.0-beta.0 on npm for ≥7 days (or until first issue surfaces)
+    epic: E9
+    status: in-progress
+    started: 2026-05-23
+    earliest_gate: 2026-05-30
+    tags: [release, soak]
+    notes: |
+      Published 2026-05-23 to npm `beta` dist-tag at @mhd-ghaith-abtah/flow@0.8.0-beta.0.
+      `latest` still points at 0.7.2-beta.0 (intentionally — defaults stay
+      stable; 0.8 is opt-in via @beta until soak closes).
+      Watch surfaces:
+        - GH issues: gh issue list --repo mhd-ghaith-abtah/flow
+        - npm downloads: https://npm-stat.com/charts.html?package=@mhd-ghaith-abtah%2Fflow
+        - CI: every push to main must stay green
+      Gate to E9-005:
+        7+ days clean OR first organic user reports clean smoke.
+
+  - id: E9-005
+    title: Promote v0.8.0-beta.0 → v0.8.0 latest on npm
+    epic: E9
     status: backlog
-    tags: [release, docs]
-    blocked_by: [E9-002]
-    estimate: 15min
+    tags: [release, publish]
+    blocked_by: [E9-004]
+    estimate: 30min
+    notes: |
+      When soak closes (E9-004 done):
+        1. tools/release.sh 0.8.0
+        2. npm publish --access public      # no --tag → goes to `latest`
+        3. gh release create v0.8.0 --notes-file ...
+        4. Verify: npm view @mhd-ghaith-abtah/flow dist-tags
+           — `latest` should move from 0.7.2-beta.0 → 0.8.0
+           — `beta` stays at 0.8.0-beta.0 (or also bumps to 0.8.0)
