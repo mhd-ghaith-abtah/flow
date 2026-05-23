@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0-beta.1] — 2026-05-23
+
 ### Added
 - **`flow install-skills` command** — closes the bootstrap gap between npm install and Claude Code slash command discovery. After `npm install -g @mhd-ghaith-abtah/flow@beta`, run `flow install-skills` to symlink the four `skills/flow-*` directories into `~/.claude/skills/` (or `<project>/.claude/skills/` with `--scope project` for the team-commit pattern; `--scope both` for both). Idempotent (skips already-correctly-linked targets); refuses to clobber real directories at the target without `--force`; replaces wrong-source symlinks silently. 9 new tests covering home/project/both scopes, refusal-without-force, force-replace, dry-run, idempotent re-run, and wrong-source-symlink replacement. README + docs/usage.md updated with the corrected bootstrap order (`npm install -g` → `flow install-skills` → `/flow-init`).
 
