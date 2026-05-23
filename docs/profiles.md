@@ -4,12 +4,14 @@ Profiles are named bundles that pick the right adapters + upstream subsets + MCP
 
 ## At a glance
 
-| Profile | Best for | Tokens/story | Review | E2E | PR | Issue tracker | ECC scope |
+| Profile | Best for | Tokens/story* | Review | E2E | PR | Issue tracker | ECC scope |
 |---|---|---:|---|---|---|---|---|
 | `mini` | Solo, one repo, light review | ~20k | `code-review` only | none | GitHub | GitHub Issues | user |
 | `standard` | Solo/small team, formal review | ~40k | `code-review` + language reviewer + security on risk tags | Playwright MCP | GitHub | GitHub Issues | user |
 | `team` | Multi-repo, multi-LLM review | ~60k | + adversarial + edge-case + separate-model reviewer | Playwright MCP | GitHub (sibling PRs) | Linear | **project** |
 | `minimal` | Bare Flow, no upstreams | <10k | none | none | none | none | user |
+
+*Tokens-per-story figures assume **Caveman is active in `full` mode** — Caveman compresses Claude Code's responses ~46% on input and ~75% on output, which is the only way these numbers are realistic. Without Caveman, multiply by ~3–4×. See [usage.md §17](usage.md#17-how-caveman-enhances-flow) for the math.
 
 ## What each profile changes
 

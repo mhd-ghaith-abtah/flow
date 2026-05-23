@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Docs audit + greenfield/Caveman sections** — full sweep of every doc file for staleness post-v0.8.0-beta.1. `docs/quickstart.md` rewritten: bootstrap order now includes the `flow install-skills` step (was missing — same gap users hit before the install-skills command shipped), Q count corrected to 9 (was 8 pre-Q7c), ECC install snippet updated from the dead `./install.sh` path to the github-pin form, `/flow-doctor --fix` (which doesn't exist) replaced with `--repair-upstream`, retro output path corrected from `<date>.md` to `<epic-id>-retro.md`. `docs/migrate-from-bmad.md` stops naming specific BMad slash commands (`/bmad-create-prd`, `/bmad-create-story`) since those changed between BMad versions; now points at the BMad 6+ `/bmad:bmm:<step>` namespace as the current shape. `docs/profiles.md` clarifies that tokens-per-story figures assume Caveman = `full`. README's "When to use which command" table swapped specific BMad slash names for a version-agnostic pointer; the install diagram shows the actual github pin + Caveman fork commands. `docs/usage.md` gains two new sections: §2c "Starting from zero (greenfield + BMad planning)" — the PRD → architecture → stories → import-bmad → /flow-story arc for users with only an idea; and §17 "How Caveman enhances Flow" — the token-math justification, mode reference, fork-pin story, opt-out paths.
+
 ## [0.8.0-beta.1] — 2026-05-23
 
 ### Added

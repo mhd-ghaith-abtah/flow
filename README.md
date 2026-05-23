@@ -97,7 +97,8 @@ flow install
 ├── Phase B: install Flow's own skills + adapters + templates
 ├── Phase C: delegate to upstream installers
 │   ├── npx bmad-method install --modules <curated subset>
-│   └── ECC ./install.sh --profile <curated subset>
+│   ├── npx -y -p "github:affaan-m/ECC#<commit>" ecc-install --target <user|project> --profile <curated subset>
+│   └── npx -y "github:mhd-ghaith-abtah/caveman#flow-pin-v0.1"   # temporary fork, see Caveman FAQ
 ├── Phase D: install MCP servers (context7, playwright, linear, …)
 ├── Phase E: scaffold flow.config.yaml + docs/flow/
 └── Phase F: smoke test (flow doctor)
@@ -111,8 +112,8 @@ After `/flow-init` you'll have slash commands from all three projects active. Us
 
 | Goal | Command | Owner |
 |---|---|---|
-| Write a PRD, architecture doc, or epic list | `/bmad-create-prd`, `/bmad-create-architecture`, `/bmad-create-epic` | BMad |
-| Generate a fresh story from a BMad epic | `/bmad-create-story` (then `/flow-sprint import-bmad`) | BMad → Flow |
+| Plan a brand-new project (PRD → architecture → stories) | BMad's own workflow (slash names vary by version — BMad 6 uses `/bmad:bmm:2-plan-workflow`, `/bmad:bmm:3-solutioning`, `/bmad:bmm:4-implementation`) | BMad |
+| Import BMad's planning output into Flow | `/flow-sprint import-bmad` or `flow sprint import-bmad` | BMad → Flow |
 | Add a story to the current sprint | `/flow-sprint add "<title>" --epic E1` | Flow |
 | Pick the next story to work on | `/flow-sprint next` | Flow |
 | **Implement → review → verify → commit → PR** | `/flow-story` | Flow (orchestrates ECC) |
@@ -120,11 +121,11 @@ After `/flow-init` you'll have slash commands from all three projects active. Us
 | Just run a code review | `/code-review` | ECC |
 | Just run the documentation updater | `/update-docs` | ECC |
 | Health-check the whole install | `/flow-doctor` | Flow |
-| End-of-sprint retro | `/flow-sprint retro` | Flow |
+| End-of-sprint retro | `/flow-sprint retro E1` (epic-scoped) | Flow |
 
 **Rule of thumb:** if you're moving a story through its lifecycle (plan → code → review → ship), use `/flow-story` — it dispatches to the right ECC primitive at the right phase. If you want to invoke an ECC primitive directly (e.g., to re-review uncommitted code without advancing the story), call it by name; Flow won't get in the way.
 
-**Don't mix:** `/bmad-create-story` and `/flow-sprint add` both create story files. Pick one per project — Flow's import-bmad subcommand bridges the two if you start with BMad and want Flow to take over.
+**Don't double-create:** BMad's create-story slash command and `/flow-sprint add` both produce story files. Pick one per project — Flow's `import-bmad` subcommand bridges the two if you start with BMad and want Flow to take over per-story orchestration.
 
 ## FAQ
 

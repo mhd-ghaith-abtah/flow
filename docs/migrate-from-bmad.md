@@ -6,7 +6,7 @@ Flow doesn't replace BMad — it sits on top of it and adds a lightweight per-st
 
 - Your BMad PRD, architecture, and epic documents — `/flow-init` does NOT touch these
 - Your BMad story files in `docs/_bmad-output/stories/` — Flow reads them as references
-- The BMad slash commands — `/bmad-create-prd`, `/bmad-create-epic`, `/bmad-create-story` still work
+- The BMad slash commands keep working — Flow doesn't remove or rename them. The exact slash names depend on which BMad version is installed (BMad 6+ uses the `/bmad:bmm:<step>` namespace, e.g. `/bmad:bmm:2-plan-workflow`, `/bmad:bmm:3-solutioning`, `/bmad:bmm:4-implementation`; older releases used a flatter `/bmad-*` form). Check `~/.claude/skills/` after install to see what BMad registered.
 - `_bmad/_config/manifest.yaml` — Flow records the BMad version for repair
 
 ## What changes
@@ -17,7 +17,7 @@ Flow doesn't replace BMad — it sits on top of it and adds a lightweight per-st
   - `journeys/`, `retros/`, `archive/`, `deferred.md`, `artifacts/`
 - `flow.config.yaml` — adapter + profile config (committed; team-share safe)
 - A new branch convention: `flow/<story-id>-<slug>` — used by `/flow-story` for auto-branching
-- `/flow-story` becomes the per-story orchestrator instead of `/bmad-create-story` + manual stepping
+- `/flow-story` becomes the per-story orchestrator instead of BMad's own per-story workflow + manual stepping
 
 ## Migration
 
@@ -68,14 +68,15 @@ Then create one story stub per entry — `templates/story.md.tmpl` is the shape.
 
 ## Coexistence
 
-Once migrated, you can still create new BMad stories with `/bmad-create-story` and import them into Flow:
+Once migrated, you can still create new stories through BMad's own slash commands (whatever your BMad version exposes) and re-import:
 
 ```
-/bmad-create-story        # writes docs/_bmad-output/stories/E1-002-<slug>.md
-/flow-sprint import-bmad  # detects new BMad story files, generates Flow stubs
+# Run BMad's create-story flow — exact command depends on your BMad version.
+# Then back into Flow:
+/flow-sprint import-bmad      # detects new BMad story files, generates Flow stubs
 ```
 
-The reverse — Flow → BMad — isn't supported. Flow's story stubs are deliberately lighter than BMad's, so round-tripping would lose information. If you need a full BMad-shape story file later, run `/bmad-create-story` and Flow will detect + link it.
+The reverse — Flow → BMad — isn't supported. Flow's story stubs are deliberately lighter than BMad's, so round-tripping would lose information. If you need a full BMad-shape story file later, run BMad's create-story flow and Flow will detect + link it on the next `import-bmad`.
 
 ## Rollback
 

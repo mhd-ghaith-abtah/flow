@@ -26,6 +26,7 @@ This is the long-form reference. For the 10-minute first-install path, see [quic
 - [14. Environment variables](#14-environment-variables)
 - [15. Files Flow writes](#15-files-flow-writes)
 - [16. Troubleshooting](#16-troubleshooting)
+- [17. How Caveman enhances Flow](#17-how-caveman-enhances-flow)
 
 ---
 
@@ -190,6 +191,89 @@ Plus, depending on profile:
 - Caveman in `~/.claude/plugins/cache/caveman/` if Caveman subset ≠ none
 - MCPs registered with Claude Code via `claude mcp add`
 - Secrets in `~/.claude/.env.flow` (chmod 600) if any `api_token` MCP was selected
+
+### 2c. Starting from zero (greenfield + BMad planning)
+
+If you have only an idea and no code yet, Flow uses BMad's planning workflow to get you from concept → PRD → architecture → stories → first execution, then takes over per-story orchestration.
+
+**Setup:**
+
+```bash
+mkdir my-idea && cd my-idea
+git init && echo "# My idea" > README.md
+
+npm install -g @mhd-ghaith-abtah/flow@beta
+flow install-skills
+
+# Pick a profile that ships BMad full. `standard` is enough for solo dev:
+flow init --profile standard --yes --bmad-subset full
+```
+
+`--bmad-subset full` installs BMad's `bmm` module (Project Manager, Architect, Product Owner, dev workflows) plus its planning-artifacts directory under `docs/_bmad-output/planning-artifacts/`.
+
+**The planning loop (inside Claude Code):**
+
+Once Flow finishes installing, BMad's slash commands become available. Exact names depend on your BMad version — BMad 6+ uses a `/bmad:bmm:<step>` namespace:
+
+```
+/bmad:bmm:1-analysis          # Optional — competitive research / scope scan
+/bmad:bmm:2-plan-workflow     # PRD (Project Manager agent)
+/bmad:bmm:3-solutioning       # Architecture + tech stack (Architect)
+/bmad:bmm:4-implementation    # Story decomposition (Scrum Master + PO)
+```
+
+Each step writes to `docs/_bmad-output/planning-artifacts/`:
+- `prd.md` — product requirements
+- `architecture.md` — system design
+- `epics.md` — high-level work breakdown
+- `stories/E1-S1-*.md` etc. — individual story files
+
+**Convert BMad's plan into Flow's sprint:**
+
+After BMad produces stories, import them:
+
+```bash
+flow sprint import-bmad
+# OR inside Claude Code:
+/flow-sprint import-bmad
+```
+
+The migrator reads `docs/_bmad-output/implementation-artifacts/sprint-status.yaml`, maps BMad statuses → Flow statuses, and writes `docs/flow/sprint.yaml` with backup-first / rollback-on-failure semantics. BMad's content stays in place — Flow doesn't delete `_bmad/`. See [migrate-from-bmad.md](migrate-from-bmad.md) for the migration mechanics.
+
+**Run the first story through Flow:**
+
+```
+/flow-story E1-S1
+```
+
+Flow takes BMad's story file, runs plan → implement → review → ship on it. BMad gave you the **why** (PRD/architecture); Flow drives the **how** (per-story execution, lighter ceremony, ~5× fewer tokens than BMad's own per-story workflow).
+
+**The whole greenfield arc in one diagram:**
+
+```
+Idea
+ │
+ ▼
+flow init --profile standard --yes --bmad-subset full
+ │
+ ▼
+/bmad:bmm:2-plan-workflow      ── PRD
+ │
+ ▼
+/bmad:bmm:3-solutioning        ── architecture, tech stack
+ │
+ ▼
+/bmad:bmm:4-implementation     ── stories + sprint-status.yaml
+ │
+ ▼
+flow sprint import-bmad        ── stories now live in docs/flow/sprint.yaml
+ │
+ ▼
+/flow-story E1-S1              ── per-story chain
+/flow-story (no args)          ── advance whatever's active
+```
+
+You can also stay in BMad's per-story workflow if you prefer its ceremony. Flow's `/flow-story` is the lighter alternative — same outcome, fewer tokens, slightly less hand-holding.
 
 ---
 
@@ -927,6 +1011,111 @@ flow init --profile <name> --yes
 ```
 
 This blows away Flow + Flow's project content + project-scope ECC. Does NOT remove BMad, user-scope ECC, or Caveman — those need their own uninstall commands (printed at the end of `flow uninstall`).
+
+---
+
+## 17. How Caveman enhances Flow
+
+[Caveman](https://github.com/JuliusBrussee/caveman) is an output-compression layer that runs at the Claude Code session level. It rewrites Claude's responses to use dense prose patterns while preserving full technical content. Code, error messages, commits, and security-relevant text stay normal. Filler — pleasantries, hedging, articles, restating the question — gets dropped.
+
+Flow expects Caveman to be active. The token budgets advertised throughout these docs assume Caveman is on. Without it, the realistic numbers are roughly 3–4× higher.
+
+### a. The concrete numbers
+
+- **~46% input token savings** — Caveman compresses your conversation history before sending it to Claude
+- **~75% output token savings** — Caveman post-processes Claude's responses on the way out
+
+### b. Why Flow needs it specifically
+
+Flow's per-story phase chain runs many small phases (plan → implement → review → docs → commit → PR). Each phase reads context (story file, code diff, review notes) and generates output. Without compression:
+
+- One `/flow-story` invocation pulls ~30–50k of context per phase
+- Chained across phases, a single story costs ~100k input + ~50k output ≈ **~150k tokens**
+- A 10-story sprint ≈ **~1.5M tokens**
+
+With Caveman in `full` mode:
+
+- Per-story cost drops to ~30k tokens
+- 10-story sprint ≈ **~300k tokens**
+
+Flow's "token-light per-story workflow" tagline only works because Caveman compresses both directions.
+
+### c. What it looks like in practice
+
+Without Caveman, a typical assistant response:
+
+> Sure! I'd be happy to help you with that. The issue you're experiencing is likely caused by a race condition in the authentication middleware where the token expiry check uses a strict less-than comparison instead of less-than-or-equal-to.
+
+With Caveman in `full` mode:
+
+> Bug in auth middleware. Token expiry check use `<` not `<=`. Fix:
+
+Same technical content, ~75% fewer tokens. Code blocks render normally — Caveman doesn't touch them.
+
+### d. Modes Flow ships
+
+| Mode | Compression | Use when |
+|---|---|---|
+| `none` | 0 | Disabled. Only if you have a specific reason. |
+| `lite` | ~20% | Most readable. Demo / pairing sessions. |
+| `full` | ~75% | **Default for every stock profile.** Recommended baseline. |
+| `ultra` | ~85% | Aggressive — occasionally harder to skim. |
+| `wenyan-*` | varies | Classical Chinese variants (experimental). |
+
+The chosen mode lives in `flow.config.yaml > upstreams.caveman.subset` (the catalog uses the `caveman_subset` field name for the same setting). Override during install via the interactive Q7b prompt; override per-session via Caveman's own `/caveman <mode>` slash command (if installed).
+
+### e. Project-scope gating — the fork story
+
+Caveman's default install activates it **globally** — every Claude Code session on your machine gets compressed output, including unrelated projects. Most users want Caveman only in Flow-managed projects.
+
+Caveman's `.caveman-enable` / `.caveman-disable` marker files solve this, but the feature is in [JuliusBrussee/caveman#407](https://github.com/JuliusBrussee/caveman/pull/407) — filed 2026-05-19 and still waiting in an upstream queue with ~134 open PRs and ~5 merges/month, so months of wait.
+
+Flow's catalog pins Caveman to a **temporary fork** ([mhd-ghaith-abtah/caveman @ `flow-pin-v0.1`](https://github.com/mhd-ghaith-abtah/caveman/tree/flow-pin-v0.1)) with the patches applied. The bootstrap order in Flow-managed projects:
+
+1. Flow installs Caveman from the fork (transparent — happens during `/flow-init` or `flow init --yes`).
+2. Flow's `/flow-init` drops a `.caveman-enable` marker file in the project root.
+3. If the user has set `~/.config/caveman/config.json` to `{"defaultMode": "off"}` (allowlist mode), Caveman stays silent everywhere EXCEPT projects with the marker.
+
+You don't have to do anything — Flow's installer handles all of this. The marker file works identically against upstream Caveman and the fork, so when upstream #407 merges, the catalog swap is a no-op at the project level.
+
+### f. How to turn Caveman off in one project
+
+```bash
+touch .caveman-disable          # in the project root
+```
+
+Restart your Claude Code session. Caveman ignores this project. Remove the file to re-enable.
+
+### g. How to opt OUT entirely on this machine
+
+Caveman's CLI (`caveman` on your $PATH after install):
+
+```bash
+caveman off                     # global default off
+caveman on                      # global default on
+caveman <mode>                  # switch active mode
+```
+
+If you want zero Caveman exposure but still want Flow, install with `--caveman-subset none` (interactive Q7b → `none`) and Flow won't invoke the Caveman installer at all. Flow still works — your tokens-per-story figures go up ~3–4×.
+
+### h. Trade-offs Flow accepts
+
+| Pro | Con |
+|---|---|
+| 3–5× lower token bill for the same outcome | Dense responses can be harder to skim for new users |
+| Phase-chain orchestration becomes affordable | Caveman has its own bug surface; `/flow-doctor` probes for known issues |
+| Caveman skill bundle is small (~kB-scale) | Adds another dependency the catalog tracks + Flow has to keep current |
+| The marker-file gating means Caveman doesn't leak into non-Flow projects | The fork pin is temporary — adds a swap-back step when upstream merges #407 |
+
+### i. Tracking the upstream merge
+
+Flow's catalog comments mark Caveman as a temporary fork explicitly. To check upstream merge status yourself:
+
+```bash
+gh pr view 407 --repo JuliusBrussee/caveman --json state,mergedAt
+```
+
+When `state` flips to `MERGED`, Flow's next release will swap `catalog.yaml > upstreams.caveman.installer.cmd` back to the upstream npx command and remove the SWAP PLAN comment block.
 
 ---
 
