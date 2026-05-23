@@ -637,10 +637,15 @@ stories:
   - id: E7-004
     title: Doctor probe for ECC scope drift / collision (both scopes present)
     epic: E7
-    status: backlog
+    status: done
     tags: [doctor, scope, observability]
     estimate: 0.5d
-    blocked_by: [E7-001]
+    closed_in: ac5ab35..HEAD
+    notes: |
+      Shipped 2026-05-20. probeCollisions checks for ECC content at both
+      ~/.claude/rules/ecc AND <cwd>/.claude/rules/ecc; warns when both
+      exist. Fix-hint reads install_scope from state and tells user
+      which dir is stale. E7 epic now fully closed.
 
   - id: E7-005
     title: Update README + docs/profiles.md with the new scope option

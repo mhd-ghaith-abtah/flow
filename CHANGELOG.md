@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **E7-004 — `flow doctor` probe for ECC scope collision** — new `Collisions` section in the doctor report. Detects when ECC content exists at BOTH `~/.claude/rules/ecc` and `<cwd>/.claude/rules/ecc` (the scenario where a user switched `--ecc-scope` without uninstalling the prior scope's content). Severity `⚠` (exit 1) because both scopes loading the same skill set into Claude Code at once is confusing and skill-resolution order is undefined. The fix-hint reads `install_scope` from `install-state.json` to identify which directory is the *active* one and suggests `rm -rf <stale_dir>`; falls back to a "set the scope first via /flow-init or --ecc-scope, then clean up" message when no scope is recorded. Cheap probe (two `existsSync` calls), runs on every `flow doctor`. 3 new tests covering collision-detected / no-collision / unknown-scope hint. 62/62 pass.
+
 ### Changed
 - **E7-005 — Profiles + README documented for the ECC scope option** — `docs/profiles.md` gained an "ECC scope" column in the at-a-glance table, a per-profile `ECC install scope` line under each profile (`user` for mini/standard/minimal/default, `project` for team), and a new "ECC install scope" section explaining the 3-layer resolution (catalog default → profile → `--ecc-scope` CLI override). README FAQ caveat updated to describe shipped behavior (was: "ships in v0.8 once E7-002 → E7-005 land"; now: "team defaults to project, others to user, override via `--ecc-scope`"). E7 epic body of work (E7-001 upstream PR + E7-002 catalog plumbing + E7-002.5 CLI flag + E7-003 install consumer + E7-005 docs) now ends.
 
