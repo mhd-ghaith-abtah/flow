@@ -810,14 +810,20 @@ stories:
     tags: [release, docs, superseded]
 
   - id: E9-004
-    title: Soak v0.8.0-beta.0 on npm for ≥7 days (or until first issue surfaces)
+    title: Soak v0.8.0-beta.1 on npm for ≥7 days (or until first issue surfaces)
     epic: E9
     status: in-progress
     started: 2026-05-23
     earliest_gate: 2026-05-30
     tags: [release, soak]
     notes: |
-      Published 2026-05-23 to npm `beta` dist-tag at @mhd-ghaith-abtah/flow@0.8.0-beta.0.
+      v0.8.0-beta.0 (initial cut earlier today) had a bootstrap gap —
+      `npm install -g @beta` left users unable to run /flow-init because
+      Claude Code only discovers slash commands from ~/.claude/skills/.
+      Caught + fixed within hours: shipped `flow install-skills`
+      (commit fe89a5f) and republished as 0.8.0-beta.1 (commit 8f4326a,
+      tag v0.8.0-beta.1). Soak target is now 0.8.0-beta.1.
+      Published 2026-05-23 to npm `beta` dist-tag at @mhd-ghaith-abtah/flow@0.8.0-beta.1.
       `latest` still points at 0.7.2-beta.0 (intentionally — defaults stay
       stable; 0.8 is opt-in via @beta until soak closes).
       Watch surfaces:
@@ -828,7 +834,7 @@ stories:
         7+ days clean OR first organic user reports clean smoke.
 
   - id: E9-005
-    title: Promote v0.8.0-beta.0 → v0.8.0 latest on npm
+    title: Promote v0.8.0-beta.1 → v0.8.0 latest on npm
     epic: E9
     status: backlog
     tags: [release, publish]
