@@ -596,12 +596,17 @@ stories:
   - id: E6-005
     title: Port flow-sprint subcommands to CLI (lib/commands/sprint/*)
     epic: E6
-    status: backlog
+    status: done
     tags: [cli, sprint, parity]
     estimate: 1d
+    closed_in: 49e0784..HEAD
     notes: |
-      Port: add, next, status, done, deferred, import-bmad, add-epic.
-      Stay slash-only: scope-review (LLM agent), retro narrative generation.
+      Shipped 2026-05-23. lib/sprint/store.js + lib/sprint/operations.js
+      pure ops; lib/commands/sprint.js thin CLI shell. Six subcommands:
+      add, next, status, done, deferred, import-bmad. Wired into
+      bin/flow.js. add-epic deferred (low-frequency — manual yaml edit
+      works fine until demand surfaces). scope-review + retro stay
+      slash-only per ROADMAP principle #6. 21 new tests, 143/143 total.
 
   - id: E6-006
     title: Tests + docs for E6 (test parity + README install section refresh)

@@ -34,6 +34,7 @@ ${chalk.bold('Commands:')}
   list-components [--family X]  List available components
   list-mcps                     List MCP servers Flow tracks
   mcp <add|remove|reauth> ...   Manage MCP servers
+  sprint <subcommand> ...       Sprint state ops: add | next | status | done | deferred | import-bmad
   help [command]                Show help
 
 ${chalk.bold('Common flags:')}
@@ -68,7 +69,7 @@ Version ${PKG.version} · ${chalk.dim(PKG.homepage)}
 
 const COMMANDS = [
   'init', 'install', 'plan', 'status', 'doctor', 'add', 'remove', 'uninstall',
-  'list-profiles', 'list-components', 'list-mcps', 'mcp', 'help', 'version', '--version'
+  'list-profiles', 'list-components', 'list-mcps', 'mcp', 'sprint', 'help', 'version', '--version'
 ];
 
 async function main() {
@@ -94,8 +95,8 @@ async function main() {
   // Parse remaining args. Note: no global `scope` default — each command sets
   // its own (install: both; uninstall: project, for safety).
   const args = yargsParser(argv.slice(1), {
-    string: ['profile', 'bmad-subset', 'ecc-subset', 'ecc-scope', 'with', 'without', 'scope', 'catalog-source', 'mcp', 'family', 'repair-upstream'],
-    boolean: ['dry-run', 'json', 'yes', 'execute', 'remove-stories', 'remove-backups', 'archive-unused', 'migrate-bmad', 'verbose'],
+    string: ['profile', 'bmad-subset', 'ecc-subset', 'ecc-scope', 'with', 'without', 'scope', 'catalog-source', 'mcp', 'family', 'repair-upstream', 'id', 'title', 'epic', 'tags', 'why', 'issue', 'note', 'project', 'status'],
+    boolean: ['dry-run', 'json', 'yes', 'execute', 'remove-stories', 'remove-backups', 'archive-unused', 'migrate-bmad', 'verbose', 'force'],
     array: ['with', 'without'],
     alias: { y: 'yes' }
   });
