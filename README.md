@@ -23,25 +23,26 @@ Existing per-story workflows are token-heavy. BMad's create-story re-reads epics
 > **Status (v0.7.2-beta.0, published 2026-05-19):** Flow is live on npm as a **beta channel**. Stable `latest` will be promoted from beta after a soak period. Expect minor breaking changes between beta releases until then.
 
 ```bash
-# Inside Claude Code (recommended for first install — interactive)
-/flow-init
-
-# Headless install via npm — beta channel (no Claude Code required)
+# 1. Install the Node CLI + bootstrap the Claude Code surface
 npm install -g @mhd-ghaith-abtah/flow@beta
+flow install-skills                             # one-time; symlinks 4 skills into ~/.claude/skills/
+
+# 2. Then EITHER (interactive):
+/flow-init                                      # inside Claude Code
+
+# OR (headless, no Claude Code needed):
 flow init --profile standard --yes              # chains detect → upstreams → MCPs → scaffold
+
+# Useful at any point:
 flow plan --profile standard                    # preview without executing
 flow doctor                                     # health check
 
-# One-shot via npx — no install
-npx -y @mhd-ghaith-abtah/flow@beta init --profile mini --yes
-
-# Or from a clone (development / contributing)
+# Dev clone (contributors):
 git clone https://github.com/mhd-ghaith-abtah/flow.git
-cd flow && npm install && tools/dev-link.sh
-flow plan --profile standard
+cd flow && npm install && tools/dev-link.sh     # dev-mode equivalent of install-skills + PATH link
 ```
 
-Two paths, same end state. `/flow-init` is interactive — Claude Code drives the Q&A, error recovery, and multi-step ceremony. `flow init --yes` is headless — pre-populates every answer from the profile defaults so it runs end-to-end without prompts (override individual knobs via `--ecc-scope`, `--bmad-subset`, `--ecc-subset`). Both invoke the same upstream installers and scaffold the same files.
+The `flow install-skills` step is what makes `/flow-init` resolve in Claude Code — npm puts the package in your global node_modules, but Claude Code only scans `~/.claude/skills/`. After install-skills, both paths (interactive slash or headless CLI) reach the same orchestrator and write the same files. Override individual knobs via `--ecc-scope`, `--bmad-subset`, `--ecc-subset`. Full guide: [docs/usage.md](docs/usage.md).
 
 The installer detects your project shape, then:
 - Installs Flow's four skills (`flow-init`, `flow-sprint`, `flow-story`, `flow-doctor`)

@@ -24,6 +24,7 @@ ${chalk.bold('Usage:')}
 ${chalk.bold('Commands:')}
   init                          Interactive first-time setup (same as /flow-init in Claude Code)
   install                       Non-interactive install with flags
+  install-skills                Symlink Flow skills into ~/.claude/skills/ (bootstrap)
   plan                          Dry-run: show the resolved install plan
   status                        What's installed where
   doctor [--mcp <id>]           Health check
@@ -68,7 +69,7 @@ Version ${PKG.version} · ${chalk.dim(PKG.homepage)}
 `;
 
 const COMMANDS = [
-  'init', 'install', 'plan', 'status', 'doctor', 'add', 'remove', 'uninstall',
+  'init', 'install', 'install-skills', 'plan', 'status', 'doctor', 'add', 'remove', 'uninstall',
   'list-profiles', 'list-components', 'list-mcps', 'mcp', 'sprint', 'help', 'version', '--version'
 ];
 

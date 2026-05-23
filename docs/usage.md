@@ -33,33 +33,49 @@ This is the long-form reference. For the 10-minute first-install path, see [quic
 
 Flow ships in two surfaces: a Claude Code skill bundle (interactive) and a Node CLI (`flow`, headless). Both invoke the same underlying installers and write the same files.
 
-### a. Inside Claude Code (slash command)
+**Bootstrap order matters.** Claude Code discovers slash commands by scanning `~/.claude/skills/<name>/`. The npm package puts skill files in the install location (typically `~/.npm-global/lib/node_modules/...`), NOT in `~/.claude/skills/`. So `/flow-init` does NOT work after a bare `npm install -g`. You need to run `flow install-skills` once to symlink the four skills into Claude Code's discovery path.
 
-If you already use Claude Code, this is the easiest path:
-
-```
-/flow-init
-```
-
-Detects your project shape, asks ~9 questions, runs the upstream installers, scaffolds Flow's files. Works inside any Claude Code session.
-
-### b. npm global install
+### a. From npm (recommended)
 
 ```bash
+# 1. Install the Node CLI
 npm install -g @mhd-ghaith-abtah/flow@beta
 flow --version
+
+# 2. Bootstrap Claude Code surface (links 4 skills into ~/.claude/skills/)
+flow install-skills
+
+# 3. Now both paths work — pick one per project:
+flow init --profile mini --yes              # headless
+# OR, inside Claude Code:
+/flow-init                                  # interactive
 ```
 
-Puts `flow` on your `$PATH`. Useful when you want to run Flow from scripts, CI, or shells where Claude Code isn't open.
+`flow install-skills` is idempotent — re-run safely after every upgrade to refresh the symlinks. It refuses to clobber existing real directories at the target without `--force`.
+
+### b. install-skills scope flag
+
+By default `flow install-skills` writes to `~/.claude/skills/` (home scope). Override:
+
+```bash
+flow install-skills                            # default: --scope home
+flow install-skills --scope home               # user-wide ~/.claude/skills/
+flow install-skills --scope project            # team-commit: <cwd>/.claude/skills/
+flow install-skills --scope both               # both
+flow install-skills --dry-run                  # preview
+flow install-skills --force                    # replace existing real dirs
+```
+
+The `--scope project` mode is for teams that want every contributor to get Flow's slash commands the moment they `git clone` the repo — commit `<project>/.claude/skills/flow-*` so Claude Code picks them up automatically when the session is opened inside the project. The user still needs the npm package installed because the symlinks point at it.
 
 ### c. `npx` — no install
 
 ```bash
-npx -y @mhd-ghaith-abtah/flow@beta plan --profile mini
+npx -y @mhd-ghaith-abtah/flow@beta install-skills     # one-time bootstrap
 npx -y @mhd-ghaith-abtah/flow@beta init --profile mini --yes
 ```
 
-Best for one-shot use or trying Flow before committing to a global install.
+`npx` works but the symlink targets the npx cache path, which can disappear when the cache rotates. For ongoing use, prefer `npm install -g`.
 
 ### d. Development clone
 
@@ -67,6 +83,8 @@ Best for one-shot use or trying Flow before committing to a global install.
 git clone https://github.com/mhd-ghaith-abtah/flow.git
 cd flow && npm install && tools/dev-link.sh
 ```
+
+`tools/dev-link.sh` is the dev-mode equivalent of `flow install-skills --scope home` — symlinks the four `skills/flow-*` dirs into `~/.claude/skills/` AND puts `flow` on `$PATH` from your clone. Use when you're contributing so changes to skill workflows take effect immediately.
 
 `tools/dev-link.sh` symlinks your clone into `$HOME/.claude/skills/flow-*` and onto `$PATH` as `flow`. Use when you're contributing.
 
