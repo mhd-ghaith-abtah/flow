@@ -50,6 +50,65 @@ jobs:
             exit 1
           fi
 
+      - name: Smoke (headless flow init --yes --dry-run in clean tmp)
+        run: |
+          set -e
+          # The headless orchestrator chains detect → upstreams → MCPs →
+          # scaffold. We run --dry-run so the upstream dispatchers
+          # short-circuit on subset (or take the runCommand dry-run path
+          # for caveman's subset=full) and never actually shell out to
+          # network installers. We assert: zero-exit, no files actually
+          # written to the tmp cwd (since --dry-run), and the manifest
+          # mentions flow.config.yaml + sprint.yaml.
+          REPO=$(pwd)
+          TMP=$(mktemp -d)
+          cd "$TMP"
+          OUTPUT=$(node "$REPO/bin/flow.js" init --profile minimal --yes --dry-run 2>&1)
+          echo "$OUTPUT"
+          echo "$OUTPUT" | grep -q "flow init complete" || (echo "::error::missing completion banner"; exit 1)
+          echo "$OUTPUT" | grep -q "flow.config.yaml" || (echo "::error::manifest missing flow.config.yaml"; exit 1)
+          echo "$OUTPUT" | grep -q "sprint.yaml" || (echo "::error::manifest missing sprint.yaml"; exit 1)
+          # Strict: dry-run must NOT have created any files in cwd.
+          if [ "$(find . -type f 2>/dev/null | wc -l)" != "0" ]; then
+            echo "::error::dry-run leaked files into cwd:"
+            find . -type f
+            exit 1
+          fi
+          cd "$REPO"
+          rm -rf "$TMP"
+
+      - name: Smoke (flow sprint subcommands in clean tmp)
+        run: |
+          set -e
+          REPO=$(pwd)
+          TMP=$(mktemp -d)
+          mkdir -p "$TMP/docs/flow"
+          cat > "$TMP/docs/flow/sprint.yaml" <<'YAML'
+          version: 1
+          project: ci-smoke
+          epics:
+            - { id: E1, title: Foundation, status: backlog }
+          stories:
+            - { id: E1-001, title: Bootstrap, epic: E1, status: backlog }
+            - { id: E1-002, title: CI, epic: E1, status: review }
+          YAML
+          cd "$TMP"
+          # status → exit 0, mentions both stories
+          node "$REPO/bin/flow.js" sprint status | tee /tmp/sprint-status.out
+          grep -q "E1-001" /tmp/sprint-status.out
+          grep -q "E1-002" /tmp/sprint-status.out
+          # next → flips first backlog to doing
+          node "$REPO/bin/flow.js" sprint next | grep -q "E1-001"
+          grep -q "status: doing" docs/flow/sprint.yaml
+          # done E1-002 → flips review to done
+          node "$REPO/bin/flow.js" sprint done E1-002 | grep -q "E1-002 done"
+          grep -q "status: done" docs/flow/sprint.yaml
+          # add → appends a story
+          node "$REPO/bin/flow.js" sprint add --id E1-003 --title "New work" --epic E1 | grep -q "E1-003"
+          grep -q "E1-003" docs/flow/sprint.yaml
+          cd "$REPO"
+          rm -rf "$TMP"
+
   shellcheck:
     runs-on: ubuntu-latest
     steps:
