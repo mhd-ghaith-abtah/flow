@@ -947,15 +947,19 @@ Workaround: pass `--continue-on-error` to skip past upstream failures and inspec
 
 Both `~/.claude/rules/ecc/` and `<project>/.claude/rules/ecc/` exist. Cause: you changed `--ecc-scope` between installs without uninstalling first. The doctor probe reads `install-state.json` to identify the active scope and prints the exact `rm -rf` command for the stale one.
 
-### d. Caveman MCP not active in this session
+### d. Caveman not active in this session
 
-Caveman activates via `~/.claude/hooks/caveman-config.js` on `SessionStart`. If you have `~/.config/caveman/config.json` set to `{"defaultMode": "off"}` (the recommended allowlist mode), drop a `.caveman-enable` marker in the project root:
+Caveman activates via `~/.claude/hooks/caveman-config.js` on `SessionStart`. Both the slash `/flow-init` and the headless `flow init --yes` (since v0.8.0-beta.2) drop a `.caveman-enable` marker file in your project root when you pick a non-`none` Caveman subset, so allowlist-mode users (`~/.config/caveman/config.json` = `{"defaultMode": "off"}`) get Caveman activated here automatically.
+
+If you're on an older Flow version OR you picked `--caveman-subset none` at install time and changed your mind:
 
 ```bash
 touch .caveman-enable
 ```
 
-Flow's `/flow-init` drops this automatically. Restart your Claude Code session for the hook to re-fire.
+Then restart your Claude Code session for the hook to re-fire.
+
+If the marker exists and Caveman still doesn't activate, run `flow doctor` and look at the Caveman row — `version=not pinned` plus an `installed=false` state record means the upstream installer never ran. Re-run `flow init --update` to fix.
 
 ### e. `flow sprint done E1-002` says "expects 'review' or 'doing'"
 
