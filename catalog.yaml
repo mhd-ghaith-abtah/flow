@@ -225,16 +225,29 @@ upstreams:
 
   ecc:
     name: "Everything Claude Code"
-    repo: "https://github.com/affaan-m/everything-claude-code"
+    # Pinned to a post-merge commit on ECC main so users get the
+    # `claude-project` install target (merged via affaan-m/ECC#2006 on
+    # 2026-05-19). Current ECC npm `latest` is 1.10.0 (2026-04-15) and
+    # predates the merge by ~36 days, so npm install would NOT have the
+    # target until affaan-m cuts the next release (2.0.0).
+    # SWAP PLAN: when ecc-universal@2.x lands on npm, switch
+    # `cmd_fallback` to `npx ecc-universal install` and pin a version.
+    repo: "https://github.com/affaan-m/ECC"
+    upstream_npm_package: "ecc-universal"
+    upstream_npm_latest: "1.10.0"
+    upstream_npm_status: "predates claude-project merge; github pin used until 2.x publishes"
+    pinned_commit: "98bd5174"
     detect:
       check_cmd: "test -d ~/.claude/rules/common"
       version_path: "~/.claude/rules/VERSION"
       installer_path_candidates:
+        # Local dev paths — if a contributor has ECC cloned locally we use
+        # it. Otherwise fall through to cmd_fallback (github npx pin).
         - "~/dev-tools/everything-claude-code/install.sh"
-        - "/usr/local/lib/node_modules/@everything-claude-code/ecc/install.sh"
+        - "~/development/personal/ecc-fork/install.sh"
     installer:
       cmd: "{installer_path}"
-      cmd_fallback: "npx @everything-claude-code/ecc install"
+      cmd_fallback: "npx -y -p \"github:affaan-m/ECC#98bd5174\" ecc-install"
       base_args: "--target claude"
       profile_arg: "--profile"
       with_arg: "--with"
