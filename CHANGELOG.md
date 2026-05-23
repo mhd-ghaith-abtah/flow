@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0-beta.2] — 2026-05-23
+
 ### Fixed
 - **Headless `flow init --yes` now drops `.caveman-enable` marker** — closes a parity gap between the slash workflow and the headless orchestrator. The slash `/flow-init` (skills/flow-init/workflow.md step 8b) has always dropped a zero-byte `.caveman-enable` in the project root when Caveman is requested, so allowlist-mode users (`~/.config/caveman/config.json` = `{"defaultMode": "off"}`) get Caveman activated there automatically. The headless orchestrator skipped this step despite README + usage.md both claiming the installer "drops a `.caveman-enable` marker". Surfaced by a user dogfooding the v0.8.0-beta.1 npm tarball into their actual project. Fix: `lib/init/orchestrate.js` now writes the marker after the Caveman dispatcher runs (skipped under `dryRun: true`, idempotent if the file already exists, non-fatal on write failure). 3 new tests cover the marker-written / no-marker-when-subset-none / no-marker-in-dry-run cases. docs/usage.md §16d updated — the manual `touch .caveman-enable` workaround is no longer needed on either install path. 191/191 tests pass.
 
