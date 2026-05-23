@@ -568,10 +568,15 @@ stories:
   - id: E6-003
     title: Port MCP registration to CLI (lib/init/mcp.js)
     epic: E6
-    status: backlog
+    status: done
     tags: [cli, install, mcp]
     estimate: 0.5d
-    blocked_by: [E6-001]
+    closed_in: 28ec2bb..HEAD
+    notes: |
+      Shipped 2026-05-23. Idempotent install (probes `claude mcp list`
+      first); auth handling stays out of the dispatcher — requiredEnv
+      + authInstructions surface in the result for the orchestrator to
+      route. 8 new tests, 107/107 total.
 
   - id: E6-004
     title: Port BMad migration to CLI (lib/init/migrate-bmad.js with backup + rollback)
