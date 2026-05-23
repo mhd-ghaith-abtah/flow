@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0-beta.0] — 2026-05-23
+
 ### Added
 - **E6-006 — `flow init --yes` headless orchestrator + integration tests** — closes E6. `lib/init/orchestrate.js` chains `detect()` → `askAll()` (pre-populated answers short-circuit each prompt) → upstream dispatchers (bmad → ecc → caveman, halt-on-error by default, `--continue-on-error` to override) → MCP registration → optional BMad migration → `scaffold()` (writes `flow.config.yaml` + `docs/flow/{stories,journeys,retros,archive}` + `sprint.yaml` + `deferred.md` + `install-state.json`). `lib/init/scaffold.js` exports pure `buildFlowConfig(plan)` and `scaffold(plan, opts)` with `--force` overwrite + skip-existing semantics; `defaultAnswersForProfile(catalog, profile, overrides)` resolves a profile into a complete Answers object so non-interactive callers (CI, tests) drive the full chain without firing any prompt. `lib/commands/init.js` rewritten: outside Claude Code with `--yes` → runs the orchestrator end-to-end and prints a manifest; outside Claude Code without `--yes` → prints both paths (headless vs slash-command); inside Claude Code → nudges to `/flow-init` slash command (skill workflow still owns the interactive ceremony per ROADMAP principle #6). README install section updated with the new headless flow. 13 new tests across orchestrate (chain logic, scope override threading, BMad migration trigger) + scaffold (file content shape, force/skip behavior, dryRun manifest); orchestrate tests deliberately stay `dryRun: true` to avoid shelling out (each upstream dispatcher would otherwise `npx`-fetch real network packages). 156/156 pass (was 143, +13).
 
